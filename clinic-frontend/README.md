@@ -4,13 +4,6 @@ Dự án Fullstack đặt lịch khám bệnh (Spring Boot 3 + React 18 + Postgr
 
 ## TÀI KHOẢN TEST SẴN TRONG DATABASE
 
-| Email                  | Mật khẩu | Vai trò    | Ghi chú                        |
-|------------------------|----------|------------|--------------------------------|
-| test@gmail.com         | 123456   | Bệnh nhân  | Đăng ký thủ công               |
-| nam@gmail.com          | 123456   | Bác sĩ     | BS. Nguyễn Văn Nam             |
-| lan@gmail.com          | 123456   | Bác sĩ     | BS. Trần Thị Lan                |
-| admin@clinic.com       | admin123   | Quản trị   | Vào được trang Admin           |
-trong data chưa có admin nên ko test đc , làm biếng thêm
 
 → Đăng nhập bất kỳ tài khoản nào → hệ thống tự động chuyển đúng dashboard theo role.
 
@@ -26,6 +19,8 @@ trong data chưa có admin nên ko test đc , làm biếng thêm
 ## CÁCH CHẠY DỰ ÁN (5 PHÚT LẦN ĐẦU, SAU CHỈ 2 PHÚT)
 
 ### 1. CÀI DATABASE PostgreSQL
+
+('admin@gmail.com', '123456', 'admin', 'active')    
 
 Tạo database tên: `clinic_management`
 

@@ -2,8 +2,8 @@ package com.clinic.backend.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import java.time.LocalDateTime;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "doctor")
@@ -14,8 +14,8 @@ public class Doctor {
     @Column(name = "doctor_id")
     private Integer doctorId;
 
-    @OneToOne
-    @JoinColumn(name = "account_id", unique = true, nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "account_id", nullable = false)
     private Account account;
 
     @Column(name = "fullname", length = 150, nullable = false)

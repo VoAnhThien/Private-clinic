@@ -1,10 +1,10 @@
 // src/main/java/com/clinic/backend/service/AppointmentService.java
 package com.clinic.backend.service;
 
+import java.util.List;
+
 import com.clinic.backend.dto.AppointmentRequest;
 import com.clinic.backend.dto.AppointmentResponse;
-
-import java.util.List;
 
 public interface AppointmentService {
     AppointmentResponse bookAppointment(AppointmentRequest request);

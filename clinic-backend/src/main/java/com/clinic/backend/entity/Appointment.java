@@ -55,6 +55,22 @@ public class Appointment {
     @OneToOne(mappedBy = "appointment")
     private MedicalRecord medicalRecord;
 
-    @OneToMany(mappedBy = "appointment")
-    private Set<MedicalRecord> medicalRecords = new HashSet<>();
+    // THÊM: Quan hệ nhiều-nhiều với Service (dịch vụ đã chọn khi đặt lịch)
+    @ManyToMany
+    @JoinTable(
+        name = "appointment_service", // Bảng trung gian
+        joinColumns = @JoinColumn(name = "appointment_id"),
+        inverseJoinColumns = @JoinColumn(name = "service_id")
+    )
+    private Set<Service> requestedServices = new HashSet<>();
+    
+    // THÊM: Lưu thông tin liên hệ tạm (nếu chưa có account)
+    @Column(name = "contact_fullname", length = 150)
+    private String contactFullname;
+    
+    @Column(name = "contact_email", length = 150)
+    private String contactEmail;
+    
+    @Column(name = "contact_phone", length = 30)
+    private String contactPhone;
 }

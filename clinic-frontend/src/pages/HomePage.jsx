@@ -2,21 +2,14 @@ import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { 
   Search, Calendar, Stethoscope, Users, ChevronRight, Phone, MapPin, 
-  Star, Award, Clock, Shield, Menu, X, User, Mail, PhoneCall, FileText 
+  Star, Award, Clock, Shield, Menu, X
 } from 'lucide-react';
 import './Css/HomePage.css';
+import BookAppointment from '../components/BookAppointment';
 
 export default function HomePage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showAppointmentForm, setShowAppointmentForm] = useState(false);
-  const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
-    doctor: '',
-    symptoms: '',
-    date: ''
-  });
 
   const specialties = [
     { name: 'Nhi khoa', icon: '👶', doctors: 45 },
@@ -73,34 +66,8 @@ export default function HomePage() {
     { number: "98%", label: "Hài lòng" }
   ];
 
-  const doctors = [
-    { id: 1, name: 'BS. Nguyễn Văn A', specialty: 'Tim mạch' },
-    { id: 2, name: 'BS. Trần Thị B', specialty: 'Nhi khoa' },
-    { id: 3, name: 'BS. Lê Văn C', specialty: 'Da liễu' },
-    { id: 4, name: 'BS. Phạm Thị D', specialty: 'Sản phụ khoa' }
-  ];
-
-  const handleInputChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Xử lý đặt lịch ở đây
-    console.log('Form data:', formData);
-    alert('Đặt lịch thành công! Chúng tôi sẽ liên hệ xác nhận trong thời gian sớm nhất.');
-    setShowAppointmentForm(false);
-    setFormData({
-      fullName: '',
-      email: '',
-      phone: '',
-      doctor: '',
-      symptoms: '',
-      date: ''
-    });
+  const handleAppointmentSuccess = (appointmentData) => {
+    console.log('✅ Đặt lịch thành công:', appointmentData);
   };
 
   return (
@@ -161,126 +128,12 @@ export default function HomePage() {
         )}
       </nav>
 
-      {/* Appointment Form Modal */}
+      {/* CHỈ DÙNG COMPONENT BookAppointment - XÓA TOÀN BỘ FORM CŨ */}
       {showAppointmentForm && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2>Đặt lịch khám</h2>
-              <button 
-                className="close-btn"
-                onClick={() => setShowAppointmentForm(false)}
-              >
-                <X />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="appointment-form">
-              <div className="form-section">
-                <h3>Thông tin cá nhân</h3>
-                <div className="form-grid">
-                  <div className="form-group">
-                    <label>
-                      <User className="input-icon" />
-                      Họ và tên
-                    </label>
-                    <input
-                      type="text"
-                      name="fullName"
-                      value={formData.fullName}
-                      onChange={handleInputChange}
-                      placeholder="Nhập họ và tên"
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>
-                      <Mail className="input-icon" />
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      placeholder="Nhập địa chỉ email"
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>
-                      <PhoneCall className="input-icon" />
-                      Số điện thoại
-                    </label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      placeholder="Nhập số điện thoại"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="form-section">
-                <h3>Thông tin khám bệnh</h3>
-                <div className="form-grid">
-                  <div className="form-group">
-                    <label>Chọn bác sĩ</label>
-                    <select
-                      name="doctor"
-                      value={formData.doctor}
-                      onChange={handleInputChange}
-                      required
-                    >
-                      <option value="">Chọn bác sĩ</option>
-                      {doctors.map(doctor => (
-                        <option key={doctor.id} value={doctor.id}>
-                          {doctor.name} - {doctor.specialty}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Ngày khám</label>
-                    <input
-                      type="date"
-                      name="date"
-                      value={formData.date}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group full-width">
-                    <label>
-                      <FileText className="input-icon" />
-                      Triệu chứng/Tình trạng
-                    </label>
-                    <textarea
-                      name="symptoms"
-                      value={formData.symptoms}
-                      onChange={handleInputChange}
-                      placeholder="Mô tả triệu chứng hoặc tình trạng sức khỏe"
-                      rows="4"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <button type="submit" className="submit-btn">
-                <Calendar className="btn-icon" />
-                Đặt lịch ngay
-              </button>
-            </form>
-          </div>
-        </div>
+        <BookAppointment 
+          onClose={() => setShowAppointmentForm(false)}
+          onSuccess={handleAppointmentSuccess}
+        />
       )}
 
       {/* Hero Section */}
@@ -350,7 +203,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Các sections khác giữ nguyên */}
       <FeaturesSection features={features} />
       <SpecialtiesSection specialties={specialties} />
       <CTASection setShowAppointmentForm={setShowAppointmentForm} />

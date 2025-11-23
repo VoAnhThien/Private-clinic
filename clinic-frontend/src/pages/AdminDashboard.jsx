@@ -1,33 +1,76 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import './Css/AdminDashboard.css';
 
 const AdminDashboard = () => {
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
+  
+  // States cho data từ API
+  const [stats, setStats] = useState({
+    totalPatients: 0,
+    totalDoctors: 0,
+    todayAppointments: 0,
+    revenue: 0,
+    availableRooms: 0,
+    occupiedRooms: 0
+  });
+  const [recentActivities, setRecentActivities] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const stats = {
-    totalPatients: 1245,
-    totalDoctors: 45,
-    todayAppointments: 28,
-    revenue: 12560000,
-    availableRooms: 12,
-    occupiedRooms: 8
-  };
+  // Fetch data khi component mount
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
-  const recentActivities = [
-    { id: 1, user: 'BS. Nguyễn Văn A', action: 'đã khám bệnh nhân', time: '5 phút trước', type: 'doctor' },
-    { id: 2, user: 'Trần Thị B', action: 'đã đặt lịch khám', time: '10 phút trước', type: 'patient' },
-    { id: 3, user: 'Lê Văn C', action: 'đã thanh toán hóa đơn', time: '15 phút trước', type: 'patient' },
-    { id: 4, user: 'Hệ thống', action: 'đã backup dữ liệu', time: '1 giờ trước', type: 'system' }
-  ];
+  const fetchDashboardData = async () => {
+  setLoading(true);
+  try {
+    // Fetch statistics
+    const statsRes = await fetch('http://localhost:8080/api/admin/statistics');
+    const statsData = await statsRes.json();
+    setStats(statsData);
 
-  const users = [
-    { id: 1, name: 'BS. Nguyễn Văn A', email: 'dr.nguyena@clinic.com', role: 'doctor', status: 'active', lastActive: '2 giờ trước' },
-    { id: 2, name: 'Trần Thị B', email: 'patientb@email.com', role: 'patient', status: 'active', lastActive: '5 phút trước' },
-    { id: 3, name: 'BS. Lê Văn C', email: 'dr.levanc@clinic.com', role: 'doctor', status: 'inactive', lastActive: '2 ngày trước' },
-    { id: 4, name: 'Phạm Thị D', email: 'patientd@email.com', role: 'patient', status: 'active', lastActive: '1 giờ trước' }
-  ];
+    // Fetch recent activities - ADD SAFETY CHECK
+    try {
+      const activitiesRes = await fetch('http://localhost:8080/api/admin/recent-activities');
+      if (activitiesRes.ok) {
+        const activitiesData = await activitiesRes.json();
+        setRecentActivities(Array.isArray(activitiesData) ? activitiesData : []);
+      } else {
+        console.warn('⚠️ Không load được activities');
+        setRecentActivities([]);
+      }
+    } catch (err) {
+      console.error('❌ Lỗi activities:', err);
+      setRecentActivities([]);
+    }
+
+    // Fetch users - ADD SAFETY CHECK
+    try {
+      const usersRes = await fetch('http://localhost:8080/api/admin/users');
+      if (usersRes.ok) {
+        const usersData = await usersRes.json();
+        setUsers(Array.isArray(usersData) ? usersData : []);
+      } else {
+        console.warn('⚠️ Không load được users');
+        setUsers([]);
+      }
+    } catch (err) {
+      console.error('❌ Lỗi users:', err);
+      setUsers([]);
+    }
+
+    console.log('✅ Đã tải data');
+  } catch (error) {
+    console.error('❌ Lỗi tải data:', error);
+    setRecentActivities([]);
+    setUsers([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -42,7 +85,7 @@ const AdminDashboard = () => {
       patient: { class: 'role-patient', text: 'Bệnh nhân', icon: '👤' },
       admin: { class: 'role-admin', text: 'Quản trị', icon: '⚙️' }
     };
-    const config = roleConfig[role];
+    const config = roleConfig[role] || roleConfig.patient;
     return (
       <span className={`role-badge ${config.class}`}>
         <span className="role-icon">{config.icon}</span>
@@ -58,6 +101,17 @@ const AdminDashboard = () => {
       </span>
     );
   };
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⏳</div>
+          <p style={{ fontSize: '1.25rem', color: '#6b7280' }}>Đang tải dữ liệu...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-dashboard">
@@ -117,9 +171,9 @@ const AdminDashboard = () => {
             <p>Quản lý toàn bộ hệ thống phòng khám</p>
           </div>
           <div className="header-actions">
-            <button className="btn-secondary">
-              <span>📥</span>
-              Export Report
+            <button className="btn-secondary" onClick={fetchDashboardData}>
+              <span>🔄</span>
+              Làm mới
             </button>
             <button className="btn-primary">
               <span>+</span>
@@ -135,7 +189,7 @@ const AdminDashboard = () => {
             <div className="stat-content">
               <h3>{stats.totalPatients.toLocaleString()}</h3>
               <p>Tổng số bệnh nhân</p>
-              <span className="stat-trend">↗️ +12% so với tháng trước</span>
+              <span className="stat-trend">📊 Dữ liệu thực tế</span>
             </div>
           </div>
           <div className="stat-card large">
@@ -143,7 +197,7 @@ const AdminDashboard = () => {
             <div className="stat-content">
               <h3>{stats.totalDoctors}</h3>
               <p>Bác sĩ trong hệ thống</p>
-              <span className="stat-trend">↗️ +3 bác sĩ mới</span>
+              <span className="stat-trend">✅ Đang hoạt động</span>
             </div>
           </div>
           <div className="stat-card large">
@@ -151,7 +205,7 @@ const AdminDashboard = () => {
             <div className="stat-content">
               <h3>{stats.todayAppointments}</h3>
               <p>Lịch hẹn hôm nay</p>
-              <span className="stat-trend">🟢 Đang hoạt động</span>
+              <span className="stat-trend">🟢 {new Date().toLocaleDateString('vi-VN')}</span>
             </div>
           </div>
           <div className="stat-card large">
@@ -159,7 +213,7 @@ const AdminDashboard = () => {
             <div className="stat-content">
               <h3>{formatCurrency(stats.revenue)}</h3>
               <p>Doanh thu tháng</p>
-              <span className="stat-trend">↗️ +18% so với tháng trước</span>
+              <span className="stat-trend">💼 Ước tính</span>
             </div>
           </div>
         </div>
@@ -173,21 +227,27 @@ const AdminDashboard = () => {
                 <button className="btn-text">Xem tất cả</button>
               </div>
               <div className="activity-list">
-                {recentActivities.map(activity => (
-                  <div key={activity.id} className="activity-item">
-                    <div className="activity-avatar">
-                      {activity.type === 'doctor' && '👨‍⚕️'}
-                      {activity.type === 'patient' && '👤'}
-                      {activity.type === 'system' && '⚙️'}
+                {recentActivities.length === 0 ? (
+                  <p style={{ textAlign: 'center', color: '#6b7280', padding: '2rem' }}>
+                    Chưa có hoạt động nào
+                  </p>
+                ) : (
+                  recentActivities.map(activity => (
+                    <div key={activity.id} className="activity-item">
+                      <div className="activity-avatar">
+                        {activity.type === 'doctor' && '👨‍⚕️'}
+                        {activity.type === 'patient' && '👤'}
+                        {activity.type === 'system' && '⚙️'}
+                      </div>
+                      <div className="activity-content">
+                        <p>
+                          <strong>{activity.user}</strong> {activity.action}
+                        </p>
+                        <span className="activity-time">{activity.time}</span>
+                      </div>
                     </div>
-                    <div className="activity-content">
-                      <p>
-                        <strong>{activity.user}</strong> {activity.action}
-                      </p>
-                      <span className="activity-time">{activity.time}</span>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
 
@@ -213,7 +273,7 @@ const AdminDashboard = () => {
           <div className="content-column">
             <div className="users-section">
               <div className="section-header">
-                <h2>Quản lý người dùng</h2>
+                <h2>Quản lý người dùng ({users.length})</h2>
                 <button className="btn-text">Quản lý</button>
               </div>
               
@@ -226,25 +286,31 @@ const AdminDashboard = () => {
                 </div>
 
                 <div className="table-body">
-                  {users.map(user => (
-                    <div key={user.id} className="table-row">
-                      <div className="table-col">
-                        <div className="user-info-compact">
-                          <strong>{user.name}</strong>
-                          <span>{user.email}</span>
+                  {users.length === 0 ? (
+                    <p style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
+                      Không có người dùng nào
+                    </p>
+                  ) : (
+                    users.map(user => (
+                      <div key={user.id} className="table-row">
+                        <div className="table-col">
+                          <div className="user-info-compact">
+                            <strong>{user.name}</strong>
+                            <span>{user.email}</span>
+                          </div>
+                        </div>
+                        <div className="table-col">
+                          {getRoleBadge(user.role)}
+                        </div>
+                        <div className="table-col">
+                          {getStatusBadge(user.status)}
+                        </div>
+                        <div className="table-col">
+                          <span className="last-active">{user.lastActive}</span>
                         </div>
                       </div>
-                      <div className="table-col">
-                        {getRoleBadge(user.role)}
-                      </div>
-                      <div className="table-col">
-                        {getStatusBadge(user.status)}
-                      </div>
-                      <div className="table-col">
-                        <span className="last-active">{user.lastActive}</span>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             </div>
