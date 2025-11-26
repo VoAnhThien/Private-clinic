@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import './Css/AdminDashboard.css';
+import AdminAppointments from './AdminAppointments';
+// import AdminUsers from './AdminUsers';
+// import AdminDoctors from './AdminDoctors';
 
 const AdminDashboard = () => {
   const { user, logout } = useAuth();
@@ -25,52 +28,52 @@ const AdminDashboard = () => {
   }, []);
 
   const fetchDashboardData = async () => {
-  setLoading(true);
-  try {
-    // Fetch statistics
-    const statsRes = await fetch('http://localhost:8080/api/admin/statistics');
-    const statsData = await statsRes.json();
-    setStats(statsData);
-
-    // Fetch recent activities - ADD SAFETY CHECK
+    setLoading(true);
     try {
-      const activitiesRes = await fetch('http://localhost:8080/api/admin/recent-activities');
-      if (activitiesRes.ok) {
-        const activitiesData = await activitiesRes.json();
-        setRecentActivities(Array.isArray(activitiesData) ? activitiesData : []);
-      } else {
-        console.warn('⚠️ Không load được activities');
+      // Fetch statistics
+      const statsRes = await fetch('http://localhost:8080/api/admin/statistics');
+      const statsData = await statsRes.json();
+      setStats(statsData);
+
+      // Fetch recent activities - ADD SAFETY CHECK
+      try {
+        const activitiesRes = await fetch('http://localhost:8080/api/admin/recent-activities');
+        if (activitiesRes.ok) {
+          const activitiesData = await activitiesRes.json();
+          setRecentActivities(Array.isArray(activitiesData) ? activitiesData : []);
+        } else {
+          console.warn('⚠️ Không load được activities');
+          setRecentActivities([]);
+        }
+      } catch (err) {
+        console.error('❌ Lỗi activities:', err);
         setRecentActivities([]);
       }
-    } catch (err) {
-      console.error('❌ Lỗi activities:', err);
-      setRecentActivities([]);
-    }
 
-    // Fetch users - ADD SAFETY CHECK
-    try {
-      const usersRes = await fetch('http://localhost:8080/api/admin/users');
-      if (usersRes.ok) {
-        const usersData = await usersRes.json();
-        setUsers(Array.isArray(usersData) ? usersData : []);
-      } else {
-        console.warn('⚠️ Không load được users');
+      // Fetch users - ADD SAFETY CHECK
+      try {
+        const usersRes = await fetch('http://localhost:8080/api/admin/users');
+        if (usersRes.ok) {
+          const usersData = await usersRes.json();
+          setUsers(Array.isArray(usersData) ? usersData : []);
+        } else {
+          console.warn('⚠️ Không load được users');
+          setUsers([]);
+        }
+      } catch (err) {
+        console.error('❌ Lỗi users:', err);
         setUsers([]);
       }
-    } catch (err) {
-      console.error('❌ Lỗi users:', err);
-      setUsers([]);
-    }
 
-    console.log('✅ Đã tải data');
-  } catch (error) {
-    console.error('❌ Lỗi tải data:', error);
-    setRecentActivities([]);
-    setUsers([]);
-  } finally {
-    setLoading(false);
-  }
-};
+      console.log('✅ Đã tải data');
+    } catch (error) {
+      console.error('❌ Lỗi tải data:', error);
+      setRecentActivities([]);
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -182,175 +185,206 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Stats Grid */}
-        <div className="stats-grid">
-          <div className="stat-card large">
-            <div className="stat-icon bg-blue-100">👥</div>
-            <div className="stat-content">
-              <h3>{stats.totalPatients.toLocaleString()}</h3>
-              <p>Tổng số bệnh nhân</p>
-              <span className="stat-trend">📊 Dữ liệu thực tế</span>
-            </div>
-          </div>
-          <div className="stat-card large">
-            <div className="stat-icon bg-green-100">👨‍⚕️</div>
-            <div className="stat-content">
-              <h3>{stats.totalDoctors}</h3>
-              <p>Bác sĩ trong hệ thống</p>
-              <span className="stat-trend">✅ Đang hoạt động</span>
-            </div>
-          </div>
-          <div className="stat-card large">
-            <div className="stat-icon bg-purple-100">📅</div>
-            <div className="stat-content">
-              <h3>{stats.todayAppointments}</h3>
-              <p>Lịch hẹn hôm nay</p>
-              <span className="stat-trend">🟢 {new Date().toLocaleDateString('vi-VN')}</span>
-            </div>
-          </div>
-          <div className="stat-card large">
-            <div className="stat-icon bg-orange-100">💰</div>
-            <div className="stat-content">
-              <h3>{formatCurrency(stats.revenue)}</h3>
-              <p>Doanh thu tháng</p>
-              <span className="stat-trend">💼 Ước tính</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="dashboard-content">
-          {/* Recent Activities */}
-          <div className="content-column">
-            <div className="activity-section">
-              <div className="section-header">
-                <h2>Hoạt động gần đây</h2>
-                <button className="btn-text">Xem tất cả</button>
-              </div>
-              <div className="activity-list">
-                {recentActivities.length === 0 ? (
-                  <p style={{ textAlign: 'center', color: '#6b7280', padding: '2rem' }}>
-                    Chưa có hoạt động nào
-                  </p>
-                ) : (
-                  recentActivities.map(activity => (
-                    <div key={activity.id} className="activity-item">
-                      <div className="activity-avatar">
-                        {activity.type === 'doctor' && '👨‍⚕️'}
-                        {activity.type === 'patient' && '👤'}
-                        {activity.type === 'system' && '⚙️'}
-                      </div>
-                      <div className="activity-content">
-                        <p>
-                          <strong>{activity.user}</strong> {activity.action}
-                        </p>
-                        <span className="activity-time">{activity.time}</span>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-
-            {/* Room Status */}
-            <div className="room-section">
-              <div className="section-header">
-                <h2>Trạng thái phòng khám</h2>
-              </div>
-              <div className="room-status">
-                <div className="room-stat">
-                  <div className="room-indicator available"></div>
-                  <span>Phòng trống: {stats.availableRooms}</span>
+        {/* HIỂN THỊ NỘI DUNG THEO TAB */}
+        {activeTab === 'overview' && (
+          <>
+            {/* Stats Grid */}
+            <div className="stats-grid">
+              <div className="stat-card large">
+                <div className="stat-icon bg-blue-100">👥</div>
+                <div className="stat-content">
+                  <h3>{stats.totalPatients.toLocaleString()}</h3>
+                  <p>Tổng số bệnh nhân</p>
+                  <span className="stat-trend">📊 Dữ liệu thực tế</span>
                 </div>
-                <div className="room-stat">
-                  <div className="room-indicator occupied"></div>
-                  <span>Phòng đang sử dụng: {stats.occupiedRooms}</span>
+              </div>
+              <div className="stat-card large">
+                <div className="stat-icon bg-green-100">👨‍⚕️</div>
+                <div className="stat-content">
+                  <h3>{stats.totalDoctors}</h3>
+                  <p>Bác sĩ trong hệ thống</p>
+                  <span className="stat-trend">✅ Đang hoạt động</span>
+                </div>
+              </div>
+              <div className="stat-card large">
+                <div className="stat-icon bg-purple-100">📅</div>
+                <div className="stat-content">
+                  <h3>{stats.todayAppointments}</h3>
+                  <p>Lịch hẹn hôm nay</p>
+                  <span className="stat-trend">🟢 {new Date().toLocaleDateString('vi-VN')}</span>
+                </div>
+              </div>
+              <div className="stat-card large">
+                <div className="stat-icon bg-orange-100">💰</div>
+                <div className="stat-content">
+                  <h3>{formatCurrency(stats.revenue)}</h3>
+                  <p>Doanh thu tháng</p>
+                  <span className="stat-trend">💼 Ước tính</span>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* User Management */}
-          <div className="content-column">
-            <div className="users-section">
-              <div className="section-header">
-                <h2>Quản lý người dùng ({users.length})</h2>
-                <button className="btn-text">Quản lý</button>
-              </div>
-              
-              <div className="users-table">
-                <div className="table-header">
-                  <div className="table-col">Người dùng</div>
-                  <div className="table-col">Vai trò</div>
-                  <div className="table-col">Trạng thái</div>
-                  <div className="table-col">Hoạt động</div>
-                </div>
-
-                <div className="table-body">
-                  {users.length === 0 ? (
-                    <p style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
-                      Không có người dùng nào
-                    </p>
-                  ) : (
-                    users.map(user => (
-                      <div key={user.id} className="table-row">
-                        <div className="table-col">
-                          <div className="user-info-compact">
-                            <strong>{user.name}</strong>
-                            <span>{user.email}</span>
+            <div className="dashboard-content">
+              {/* Recent Activities */}
+              <div className="content-column">
+                <div className="activity-section">
+                  <div className="section-header">
+                    <h2>Hoạt động gần đây</h2>
+                    <button className="btn-text">Xem tất cả</button>
+                  </div>
+                  <div className="activity-list">
+                    {recentActivities.length === 0 ? (
+                      <p style={{ textAlign: 'center', color: '#6b7280', padding: '2rem' }}>
+                        Chưa có hoạt động nào
+                      </p>
+                    ) : (
+                      recentActivities.map(activity => (
+                        <div key={activity.id} className="activity-item">
+                          <div className="activity-avatar">
+                            {activity.type === 'doctor' && '👨‍⚕️'}
+                            {activity.type === 'patient' && '👤'}
+                            {activity.type === 'system' && '⚙️'}
+                          </div>
+                          <div className="activity-content">
+                            <p>
+                              <strong>{activity.user}</strong> {activity.action}
+                            </p>
+                            <span className="activity-time">{activity.time}</span>
                           </div>
                         </div>
-                        <div className="table-col">
-                          {getRoleBadge(user.role)}
-                        </div>
-                        <div className="table-col">
-                          {getStatusBadge(user.status)}
-                        </div>
-                        <div className="table-col">
-                          <span className="last-active">{user.lastActive}</span>
-                        </div>
-                      </div>
-                    ))
-                  )}
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Room Status */}
+                <div className="room-section">
+                  <div className="section-header">
+                    <h2>Trạng thái phòng khám</h2>
+                  </div>
+                  <div className="room-status">
+                    <div className="room-stat">
+                      <div className="room-indicator available"></div>
+                      <span>Phòng trống: {stats.availableRooms}</span>
+                    </div>
+                    <div className="room-stat">
+                      <div className="room-indicator occupied"></div>
+                      <span>Phòng đang sử dụng: {stats.occupiedRooms}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* User Management */}
+              <div className="content-column">
+                <div className="users-section">
+                  <div className="section-header">
+                    <h2>Quản lý người dùng ({users.length})</h2>
+                    <button className="btn-text">Quản lý</button>
+                  </div>
+                  
+                  <div className="users-table">
+                    <div className="table-header">
+                      <div className="table-col">Người dùng</div>
+                      <div className="table-col">Vai trò</div>
+                      <div className="table-col">Trạng thái</div>
+                      <div className="table-col">Hoạt động</div>
+                    </div>
+
+                    <div className="table-body">
+                      {users.length === 0 ? (
+                        <p style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
+                          Không có người dùng nào
+                        </p>
+                      ) : (
+                        users.map(user => (
+                          <div key={user.id} className="table-row">
+                            <div className="table-col">
+                              <div className="user-info-compact">
+                                <strong>{user.name}</strong>
+                                <span>{user.email}</span>
+                              </div>
+                            </div>
+                            <div className="table-col">
+                              {getRoleBadge(user.role)}
+                            </div>
+                            <div className="table-col">
+                              {getStatusBadge(user.status)}
+                            </div>
+                            <div className="table-col">
+                              <span className="last-active">{user.lastActive}</span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* System Health */}
-        <div className="system-health">
-          <h2>Tình trạng hệ thống</h2>
-          <div className="health-cards">
-            <div className="health-card healthy">
-              <span className="health-icon">💾</span>
-              <div className="health-info">
-                <h3>Database</h3>
-                <p>Hoạt động tốt</p>
+            {/* System Health */}
+            <div className="system-health">
+              <h2>Tình trạng hệ thống</h2>
+              <div className="health-cards">
+                <div className="health-card healthy">
+                  <span className="health-icon">💾</span>
+                  <div className="health-info">
+                    <h3>Database</h3>
+                    <p>Hoạt động tốt</p>
+                  </div>
+                </div>
+                <div className="health-card healthy">
+                  <span className="health-icon">🔒</span>
+                  <div className="health-info">
+                    <h3>Bảo mật</h3>
+                    <p>Đã bảo vệ</p>
+                  </div>
+                </div>
+                <div className="health-card warning">
+                  <span className="health-icon">💿</span>
+                  <div className="health-info">
+                    <h3>Lưu trữ</h3>
+                    <p>75% đã sử dụng</p>
+                  </div>
+                </div>
+                <div className="health-card healthy">
+                  <span className="health-icon">🌐</span>
+                  <div className="health-info">
+                    <h3>Mạng</h3>
+                    <p>Kết nối ổn định</p>
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="health-card healthy">
-              <span className="health-icon">🔒</span>
-              <div className="health-info">
-                <h3>Bảo mật</h3>
-                <p>Đã bảo vệ</p>
-              </div>
-            </div>
-            <div className="health-card warning">
-              <span className="health-icon">💿</span>
-              <div className="health-info">
-                <h3>Lưu trữ</h3>
-                <p>75% đã sử dụng</p>
-              </div>
-            </div>
-            <div className="health-card healthy">
-              <span className="health-icon">🌐</span>
-              <div className="health-info">
-                <h3>Mạng</h3>
-                <p>Kết nối ổn định</p>
-              </div>
-            </div>
+          </>
+        )}
+
+        {/* HIỂN THỊ TRANG LỊCH HẸN */}
+        {activeTab === 'appointments' && <AdminAppointments />}
+
+        {/* CÁC TAB KHÁC */}
+        {activeTab === 'users' && <AdminUsers />}
+        
+        {activeTab === 'doctors' && <AdminDoctors />}
+        
+        {activeTab === 'finance' && (
+          <div className="tab-content">
+            <h2>Tài chính - Đang phát triển</h2>
           </div>
-        </div>
+        )}
+        
+        {activeTab === 'reports' && (
+          <div className="tab-content">
+            <h2>Báo cáo - Đang phát triển</h2>
+          </div>
+        )}
+        
+        {activeTab === 'settings' && (
+          <div className="tab-content">
+            <h2>Cài đặt - Đang phát triển</h2>
+          </div>
+        )}
       </main>
     </div>
   );

@@ -2,7 +2,9 @@ package com.clinic.backend.service.impl;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -37,7 +39,33 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final DoctorRepository doctorRepo;
     private final RoomRepository roomRepo;
     private final AdminRepository adminRepo;
-    private final ServiceRepository serviceRepo; // THÊM
+    private final ServiceRepository serviceRepo;
+
+     // Lấy tất cả appointments
+    @Override
+    public List<AppointmentResponse> getAllAppointments() {
+        return appointmentRepo.findAll().stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    //- Cập nhật trạng thái
+    public AppointmentResponse updateAppointmentStatus(Integer appointmentId, String status) {
+        Appointment appointment = appointmentRepo.findById(appointmentId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy lịch hẹn: " + appointmentId));
+        
+        // Validate status
+        List<String> validStatuses = Arrays.asList("pending", "confirmed", "in_progress", "completed", "canceled");
+        if (!validStatuses.contains(status)) {
+            throw new RuntimeException("Trạng thái không hợp lệ: " + status);
+        }
+        
+        appointment.setStatus(status);
+        appointment.setUpdatedAt(LocalDateTime.now()); // Cập nhật thời gian
+        Appointment savedAppointment = appointmentRepo.save(appointment); // LƯU VÀO DATABASE
+        
+        return toResponse(savedAppointment);
+    }
 
     @Override
     public AppointmentResponse bookAppointment(AppointmentRequest request) {
@@ -95,7 +123,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .contactFullname(request.getFullname())
                 .contactEmail(request.getEmail())
                 .contactPhone(request.getPhone())
-                .requestedServices(requestedServices) // THÊM
+                .requestedServices(requestedServices)
                 .createdByAdmin(request.getCreatedByAdminId() != null ?
                         adminRepo.findById(request.getCreatedByAdminId()).orElse(null) : null)
                 .build();
@@ -195,4 +223,5 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .totalAmount(doctorFee.add(serviceFee))
                 .build();
     }
+
 }

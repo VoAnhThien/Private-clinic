@@ -1,12 +1,35 @@
 package com.clinic.backend.controller;
 
-import com.clinic.backend.repository.*;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
-
-import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.clinic.backend.dto.CreateUserRequest;
+import com.clinic.backend.dto.UpdateUserRequest;
+import com.clinic.backend.dto.UserDTO;
+import com.clinic.backend.repository.AccountRepository;
+import com.clinic.backend.repository.AppointmentRepository;
+import com.clinic.backend.repository.DoctorRepository;
+import com.clinic.backend.repository.PatientRepository;
+import com.clinic.backend.service.AdminService;
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -18,8 +41,90 @@ public class AdminController {
     private final DoctorRepository doctorRepo;
     private final AppointmentRepository appointmentRepo;
     private final AccountRepository accountRepo;
+    private final AdminService adminService;
 
-    // Lấy thống kê tổng quan
+    // ============ USER MANAGEMENT ============
+    
+    /**
+     * Lấy danh sách tất cả users
+     */
+    @GetMapping("/users")
+    public List<UserDTO> getAllUsers() {
+        return adminService.getAllUsers();
+    }
+
+    /**
+     * Lấy danh sách users theo loại (admin/doctor/patient)
+     */
+    @GetMapping("/users/type/{type}")
+    public List<UserDTO> getUsersByType(@PathVariable String type) {
+        return adminService.getUsersByType(type);
+    }
+
+    /**
+     * Lấy chi tiết user theo ID
+     */
+    @GetMapping("/users/{id}")
+    public UserDTO getUserById(@PathVariable Integer id) {
+        return adminService.getUserById(id);
+    }
+
+    /**
+     * Tạo user mới (admin/doctor/patient)
+     */
+    @PostMapping("/users")
+    @ResponseStatus(HttpStatus.CREATED)
+    public UserDTO createUser(@Valid @RequestBody CreateUserRequest request) {
+        return adminService.createUser(request);
+    }
+
+    /**
+     * Cập nhật thông tin user
+     */
+    @PutMapping("/users/{id}")
+    public UserDTO updateUser(
+            @PathVariable Integer id,
+            @Valid @RequestBody UpdateUserRequest request) {
+        return adminService.updateUser(id, request);
+    }
+
+    /**
+     * Xóa user (soft delete - chuyển status thành inactive)
+     */
+    @DeleteMapping("/users/{id}")
+    public ResponseEntity<Map<String, String>> deleteUser(@PathVariable Integer id) {
+        adminService.deleteUser(id);
+        return ResponseEntity.ok(Map.of("message", "Đã xóa người dùng thành công"));
+    }
+
+    /**
+     * Thay đổi trạng thái user (active/inactive)
+     */
+    @PutMapping("/users/{id}/status")
+    public UserDTO updateUserStatus(
+            @PathVariable Integer id,
+            @RequestBody Map<String, String> request) {
+        String status = request.get("status");
+        return adminService.updateUserStatus(id, status);
+    }
+
+    /**
+     * Reset mật khẩu user
+     */
+    @PostMapping("/users/{id}/reset-password")
+    public ResponseEntity<Map<String, String>> resetPassword(
+            @PathVariable Integer id,
+            @RequestBody Map<String, String> request) {
+        String newPassword = request.get("newPassword");
+        adminService.resetPassword(id, newPassword);
+        return ResponseEntity.ok(Map.of("message", "Đã reset mật khẩu thành công"));
+    }
+
+    // ============ STATISTICS ============
+    
+    /**
+     * Lấy thống kê tổng quan
+     */
     @GetMapping("/statistics")
     public Map<String, Object> getStatistics() {
         Map<String, Object> stats = new HashMap<>();
@@ -35,7 +140,7 @@ public class AdminController {
         stats.put("todayAppointments", todayAppointments);
         
         // Doanh thu tháng (giả lập - cần có bảng Invoice để tính thật)
-        stats.put("revenue", 12560000);
+        stats.put("revenue", 0);
         
         // Phòng khám (giả lập)
         stats.put("availableRooms", 12);
@@ -44,7 +149,11 @@ public class AdminController {
         return stats;
     }
 
-    // Lấy hoạt động gần đây
+    // ============ RECENT ACTIVITIES ============
+    
+    /**
+     * Lấy hoạt động gần đây
+     */
     @GetMapping("/recent-activities")
     public List<Map<String, Object>> getRecentActivities() {
         List<Map<String, Object>> activities = new ArrayList<>();
@@ -68,41 +177,6 @@ public class AdminController {
         }
         
         return activities;
-    }
-
-    // Lấy danh sách users
-    @GetMapping("/users")
-    public List<Map<String, Object>> getUsers() {
-        List<Map<String, Object>> users = new ArrayList<>();
-        
-        // Lấy tất cả accounts
-        List<com.clinic.backend.entity.Account> accounts = accountRepo.findAll();
-        
-        for (var account : accounts) {
-            Map<String, Object> user = new HashMap<>();
-            user.put("id", account.getAccountId());
-            user.put("email", account.getEmail());
-            user.put("role", account.getAccountType());
-            user.put("status", account.getStatus());
-            user.put("createdAt", account.getCreatedAt());
-            
-            // Lấy tên từ Doctor hoặc Patient
-            if ("doctor".equals(account.getAccountType())) {
-                var doctor = doctorRepo.findByAccount_AccountId(account.getAccountId()).orElse(null);
-                user.put("name", doctor != null ? doctor.getFullname() : "N/A");
-            } else if ("patient".equals(account.getAccountType())) {
-                var patient = patientRepo.findByAccount_AccountId(account.getAccountId()).orElse(null);
-                user.put("name", patient != null ? patient.getFullname() : "N/A");
-            } else {
-                user.put("name", "Admin");
-            }
-            
-            user.put("lastActive", getTimeAgo(account.getUpdatedAt()));
-            
-            users.add(user);
-        }
-        
-        return users;
     }
 
     // Helper: Tính khoảng thời gian

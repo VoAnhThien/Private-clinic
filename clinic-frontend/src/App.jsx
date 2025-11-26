@@ -1,4 +1,4 @@
-// src/App.jsx  ← CHỈ THAY NỘI DUNG NÀY, CÒN LẠI GIỮ NGUYÊN
+// src/App.jsx 
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import LoginPage from './pages/LoginPage';
@@ -33,7 +33,7 @@ function ProtectedRoute({ children, allowedRoles }) {
   return children;
 }
 
-// MỚI: Trang chủ công khai cho người chưa đăng nhập
+//Trang chủ công khai cho người chưa đăng nhập
 function PublicHome() {
   const { user } = useAuth();
 

@@ -57,22 +57,6 @@ public class ClinicBackendApplication {
         doctorRepo.save(new Doctor(null, acc1, "BS. Nguyễn Văn Nam", s1, r1, "0912345678", "Nội tổng quát", 10, new BigDecimal("200000"), "active", null));
         doctorRepo.save(new Doctor(null, acc2, "BS. Trần Thị Lan", s2, r2, "0912345679", "Tim mạch", 8, new BigDecimal("250000"), "active", null));
 
-        // // 4. Bệnh nhân mẫu để test login
-        // Account patientAcc = accountRepo.save(Account.builder()
-        //     .email("test@gmail.com")
-        //     .password("123456")
-        //     .accountType("patient")
-        //     .status("active")
-        //     .build());
-
-        // patientRepo.save(Patient.builder()
-        //     .patientId("P0001")
-        //     .account(patientAcc)
-        //     .fullname("Nguyễn Văn Test")
-        //     .phone("0909999999")
-        //     .email("test@gmail.com")
-        //     .build());
-
         System.out.println("=== INSERT DỮ LIỆU MẪU THÀNH CÔNG ===");
         System.out.println("→ Đăng nhập thử: test@gmail.com / 123456");
     };

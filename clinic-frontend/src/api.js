@@ -10,16 +10,6 @@ const api = axios.create({
   },
 });
 
-// // Tự động gắn token vào mọi request nếu có
-// // src/api.js – sửa lại phần này
-// api.interceptors.request.use((config) => {
-//   // Token giả, cứ gắn đại vào
-//   config.headers.Authorization = "Bearer dang-nhap-thanh-cong-day-nhe";
-//   return config;
-// });
-
-// export default api;
-
 // Interceptor để tự động thêm token vào mọi request
 api.interceptors.request.use(
   (config) => {

@@ -20,7 +20,15 @@ Dự án Fullstack đặt lịch khám bệnh (Spring Boot 3 + React 18 + Postgr
 
 ### 1. CÀI DATABASE PostgreSQL
 
-('admin@gmail.com', '123456', 'admin', 'active')    
+('admin@gmail.com', '123456', 'admin', 'active')
+
+"doctor"		"nam@gmail.com"
+"doctor"		"lan@gmail.com"
+"patient"	"2025-11-23 00:40:26.68041"	"test999@gmail.com"
+"patient"	"2025-11-23 00:44:17.030048"	"testcurl@gmail.com"
+"patient"	"2025-11-23 01:09:18.135286"	"vantest@gmail.com"
+"patient"	"2025-11-23 16:44:33.230431"	"tanluc@gmail.com"
+"admin"		"admin@gmail.com"  
 
 Tạo database tên: `clinic_management`
 

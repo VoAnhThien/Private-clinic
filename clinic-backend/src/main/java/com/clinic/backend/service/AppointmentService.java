@@ -11,4 +11,7 @@ public interface AppointmentService {
     List<AppointmentResponse> getAppointmentsByPatient(String patientId);
     List<AppointmentResponse> getAppointmentsByDoctor(Integer doctorId);
     List<AppointmentResponse> getAppointmentsByDate(java.time.LocalDate date);
+    
+    List<AppointmentResponse> getAllAppointments(); 
+    AppointmentResponse updateAppointmentStatus(Integer appointmentId, String status);
 }   
