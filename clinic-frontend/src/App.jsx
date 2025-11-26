@@ -4,6 +4,9 @@ import { useAuth } from './context/AuthContext';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import HomePage from './pages/HomePage';           // ← Trang chủ công khai (chưa đăng nhập)
+import DoctorsPage from './pages/DoctorsPage';
+import ContactPage from './pages/ContactPage';
+import ServicesPage from './pages/ServicesPage';  
 import PatientDashboard from './pages/PatientDashboard';
 import DoctorDashboard from './pages/DoctorDashboard';
 import AdminDashboard from './pages/AdminDashboard';
@@ -60,7 +63,14 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
 
-        {/* 3. Dashboard theo role - BẮT BUỘC đã đăng nhập + đúng role */}
+        {/* 3. TRANG BÁC SĨ - ai cũng xem được */}
+        <Route path="/doctors" element={<DoctorsPage />} />
+
+        <Route path="/contact" element={<ContactPage />} />
+
+        <Route path="/services" element={<ServicesPage />} />
+
+        {/* 4. Dashboard theo role - BẮT BUỘC đã đăng nhập + đúng role */}
         <Route
           path="/patient/*"
           element={

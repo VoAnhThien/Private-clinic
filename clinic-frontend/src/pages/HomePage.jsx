@@ -60,10 +60,10 @@ export default function HomePage() {
   ];
 
   const stats = [
-    { number: "50K+", label: "Bệnh nhân" },
-    { number: "500+", label: "Bác sĩ" },
-    { number: "50+", label: "Chuyên khoa" },
-    { number: "98%", label: "Hài lòng" }
+    { number: "100+", label: "Bệnh nhân" },
+    { number: "10+", label: "Bác sĩ" },
+    { number: "10+", label: "Chuyên khoa" },
+    { number: "90%", label: "Hài lòng" }
   ];
 
   const handleAppointmentSuccess = (appointmentData) => {
@@ -84,7 +84,7 @@ export default function HomePage() {
             <li><Link to="/" className="nav-link active">Trang chủ</Link></li>
             <li><Link to="/services" className="nav-link">Dịch vụ</Link></li>
             <li><Link to="/doctors" className="nav-link">Bác sĩ</Link></li>
-            <li><Link to="/appointment" className="nav-link">Đặt lịch</Link></li>
+            {/* <li><Link to="/appointment" className="nav-link">Đặt lịch</Link></li> */}
             <li><Link to="/contact" className="nav-link">Liên hệ</Link></li>
           </ul>
 
@@ -324,17 +324,17 @@ function Footer() {
             <h3>Liên hệ</h3>
             <div className="contact-item">
               <Phone className="contact-icon" />
-              <span>1900 1234</span>
+              <span>0355897327</span>
             </div>
             <div className="contact-item">
               <MapPin className="contact-icon" />
-              <span>123 Nguyễn Văn Linh, Quận 7, TP.HCM</span>
+              <span>STU,HCM</span>
             </div>
           </div>
         </div>
         
         <div className="footer-bottom">
-          <p>&copy; 2024 Phòng Khám Tư. Tất cả các quyền được bảo lưu.</p>
+          <p>&copy; 2025 Phòng Khám Tư. Tất cả các quyền được bảo lưu.</p>
         </div>
       </div>
     </footer>

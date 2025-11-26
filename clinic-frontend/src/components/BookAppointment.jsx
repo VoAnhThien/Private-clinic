@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, User, Mail, Phone, Stethoscope, ClipboardList, CheckCircle, Clock } from 'lucide-react';
 
-export default function BookAppointment({ onClose, onSuccess }) {
+export default function BookAppointment({ onClose, onSuccess, patientInfo = null }) {
   const [step, setStep] = useState(1);
   
   const [formData, setFormData] = useState({
-    fullname: '',
-    email: '',
-    phone: '',
+    fullname: patientInfo?.fullname || '',
+    email: patientInfo?.email || '',
+    phone: patientInfo?.phone || '',
+    patientId: patientInfo?.patientId || '',
     doctorId: '',
     appointmentDate: '',
     appointmentTime: '',
@@ -19,6 +20,19 @@ export default function BookAppointment({ onClose, onSuccess }) {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Auto-fill patient info when patientInfo changes
+  useEffect(() => {
+    if (patientInfo) {
+      setFormData(prev => ({
+        ...prev,
+        fullname: patientInfo.fullname || '',
+        email: patientInfo.email || '',
+        phone: patientInfo.phone || '',
+        patientId: patientInfo.patientId || ''
+      }));
+    }
+  }, [patientInfo]);
 
   useEffect(() => {
     loadDoctors();
@@ -78,11 +92,12 @@ export default function BookAppointment({ onClose, onSuccess }) {
         fullname: formData.fullname,
         email: formData.email,
         phone: formData.phone,
+        patientId: formData.patientId || undefined, // Gửi patientId nếu có
         doctorId: parseInt(formData.doctorId),
         appointmentDate: formData.appointmentDate,
         appointmentTime: formData.appointmentTime + ':00',
         reason: formData.reason,
-        serviceIds: selectedServices
+        serviceIds: selectedServices.length > 0 ? selectedServices : [1, 2] // Default services nếu không chọn
       };
 
       console.log('📤 Đặt lịch:', payload);
@@ -218,6 +233,11 @@ export default function BookAppointment({ onClose, onSuccess }) {
       transition: 'all 0.2s',
       boxSizing: 'border-box'
     },
+    inputDisabled: {
+      backgroundColor: '#f3f4f6',
+      cursor: 'not-allowed',
+      opacity: 0.7
+    },
     grid: {
       display: 'grid',
       gridTemplateColumns: 'repeat(2, 1fr)',
@@ -291,6 +311,21 @@ export default function BookAppointment({ onClose, onSuccess }) {
         <div style={styles.content}>
           {error && <div style={styles.error}>⚠️ {error}</div>}
 
+          {/* Info box nếu đã login */}
+          {patientInfo && step === 1 && (
+            <div style={{ 
+              backgroundColor: '#eff6ff', 
+              border: '1px solid #bfdbfe', 
+              borderRadius: '0.5rem', 
+              padding: '1rem', 
+              marginBottom: '1rem' 
+            }}>
+              <p style={{ margin: 0, fontSize: '0.875rem', color: '#1e40af' }}>
+                ℹ️ Thông tin của bạn đã được tự động điền. Bạn chỉ cần chọn bác sĩ và thời gian khám.
+              </p>
+            </div>
+          )}
+
           {/* Bước 1 */}
           {step === 1 && (
             <div>
@@ -303,9 +338,12 @@ export default function BookAppointment({ onClose, onSuccess }) {
                     name="fullname"
                     value={formData.fullname}
                     onChange={handleChange}
+                    // style={{...styles.input, ...(patientInfo ? styles.inputDisabled : {})}}
                     style={styles.input}
-                    placeholder="Nguyễn Văn A"
+                    placeholder="Họ và tên..."
                     required
+                    // disabled={!!patientInfo}
+                    disabled={false}
                   />
                 </div>
 
@@ -319,8 +357,10 @@ export default function BookAppointment({ onClose, onSuccess }) {
                     value={formData.email}
                     onChange={handleChange}
                     style={styles.input}
-                    placeholder="example@gmail.com"
+                    // style={styles.input}style={{...styles.input, ...(patientInfo ? styles.inputDisabled : {})}}
+                    placeholder="@gmail..."
                     required
+                    disabled={false}
                   />
                 </div>
 
@@ -334,8 +374,9 @@ export default function BookAppointment({ onClose, onSuccess }) {
                     value={formData.phone}
                     onChange={handleChange}
                     style={styles.input}
-                    placeholder="0901234567"
+                    placeholder=""
                     required
+                    disabled={false}
                   />
                 </div>
 

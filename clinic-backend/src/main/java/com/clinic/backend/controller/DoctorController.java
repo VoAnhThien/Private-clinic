@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.clinic.backend.entity.Doctor;
@@ -35,5 +36,11 @@ public class DoctorController {
     @GetMapping("/specialty/{specialtyId}")
     public List<Doctor> getDoctorsBySpecialty(@PathVariable Integer specialtyId) {
         return doctorRepo.findBySpecialty_SpecialtyId(specialtyId);
+    }
+
+    @GetMapping("/by-email")
+    public Doctor getDoctorByEmail(@RequestParam String email) {
+        return doctorRepo.findByAccount_Email(email)
+            .orElseThrow(() -> new RuntimeException("Không tìm thấy bác sĩ với email: " + email));
     }
 }

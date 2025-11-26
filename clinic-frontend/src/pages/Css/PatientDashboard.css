@@ -526,3 +526,33 @@
     flex-wrap: wrap;
   }
 }
+
+/* Thêm vào HomePage.css */
+
+/* Loading spinner for button */
+.loading-spinner-small {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Disabled button state */
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Auto-filled input styling */
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
