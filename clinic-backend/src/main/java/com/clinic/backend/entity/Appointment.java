@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.*;
 import java.util.Set;
+
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import java.util.HashSet;
 
 @Entity
@@ -15,8 +18,13 @@ public class Appointment {
     @Column(name = "appointment_id")
     private Integer appointmentId;
 
+    // @ManyToOne
+    // @JoinColumn(name = "patient_id", nullable = false)
+    // private Patient patient;
+
     @ManyToOne
-    @JoinColumn(name = "patient_id", nullable = false)
+    @JoinColumn(name = "patient_id", referencedColumnName = "patient_id")
+    @JsonBackReference
     private Patient patient;
 
     @ManyToOne

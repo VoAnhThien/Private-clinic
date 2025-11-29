@@ -11,30 +11,49 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   // Khi reload trang → khôi phục user từ token + gọi API lấy role thật
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const savedEmail = localStorage.getItem('userEmail'); // ← THÊM DÒNG NÀY
+  // useEffect(() => {
+  //   const token = localStorage.getItem('token');
+  //   const savedEmail = localStorage.getItem('userEmail'); // ← THÊM DÒNG NÀY
 
-    if (token && savedEmail) {
-      // Gọi API lấy thông tin user từ backend (bắt buộc để biết role thật)
-      api.get(`/api/auth/me?email=${savedEmail}`)
-        .then(res => {
-          const userData = res.data;
-          setUser({
-            token,
-            id: userData.accountId,
-            email: userData.email,
-            role: userData.accountType.toUpperCase(), // ← CHÍNH LÀ ĐÂY: account_type → role
-          });
-        })
-        .catch(() => {
+  //   if (token && savedEmail) {
+  //     // Gọi API lấy thông tin user từ backend (bắt buộc để biết role thật)
+  //     api.get(`/api/auth/me?email=${savedEmail}`)
+  //       .then(res => {
+  //         const userData = res.data;
+  //         setUser({
+  //           token,
+  //           id: userData.accountId,
+  //           email: userData.email,
+  //           role: userData.accountType.toUpperCase(), // ← CHÍNH LÀ ĐÂY: account_type → role
+  //         });
+  //       })
+  //       .catch(() => {
+  //         localStorage.removeItem('token');
+  //         localStorage.removeItem('userEmail');
+  //       })
+  //       .finally(() => setLoading(false));
+  //   } else {
+  //     setLoading(false);
+  //   }
+  // }, []);
+    useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem('token');
+      const userData = localStorage.getItem('user');
+      
+      if (token && userData) {
+        try {
+          setUser(JSON.parse(userData));
+        } catch (error) {
+          console.error('Invalid user data:', error);
           localStorage.removeItem('token');
-          localStorage.removeItem('userEmail');
-        })
-        .finally(() => setLoading(false));
-    } else {
+          localStorage.removeItem('user');
+        }
+      }
       setLoading(false);
-    }
+    };
+
+    checkAuth();
   }, []);
 
   const login = async (email, password) => {

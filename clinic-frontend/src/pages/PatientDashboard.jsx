@@ -1,16 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { appointmentApi } from '../services/appointmentApi';
 import { patientApi } from '../services/patientApi';
 import BookAppointment from '../components/BookAppointment';
+import DoctorsPage from './DoctorsPage';
+import PatientMedicalHistory from './PatientMedicalHistory';
+import PatientProfile from './PatientProfile';
 import './Css/PatientDashboard.css';
 
 const PatientDashboard = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('appointments');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAppointmentForm, setShowAppointmentForm] = useState(false);
+  
+
 
   // State cho data
   const [patientInfo, setPatientInfo] = useState(null);
@@ -22,57 +30,96 @@ const PatientDashboard = () => {
   });
 
   // Fetch patient info và appointments
-  useEffect(() => {
+  // useEffect(() => {
+  //   fetchData();
+  // }, [user]);
+
+    useEffect(() => {
     fetchData();
+    
+    // Auto refresh mỗi 30s
+    const interval = setInterval(() => {
+      console.log('🔄 Auto refreshing appointments...');
+      fetchData();
+    }, 30000); // 30 giây
+
+    return () => clearInterval(interval);
   }, [user]);
 
   const fetchData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  try {
+    setLoading(true);
+    setError(null);
 
-      console.log('🔍 Fetching patient data for email:', user.email);
+    console.log('🔍 Fetching patient data for email:', user.email);
 
-      // 1. Lấy thông tin patient từ email
-      const patientData = await patientApi.getByEmail(user.email);
-      console.log('✅ Patient data:', patientData);
-      setPatientInfo(patientData);
+    // 1. Lấy thông tin patient từ email
+    const patientData = await patientApi.getByEmail(user.email);
+    console.log('✅ Patient data:', patientData);
+    setPatientInfo(patientData);
 
-      // 2. Lấy danh sách appointments của patient này
-      const appointmentsData = await appointmentApi.getByPatient(patientData.patientId);
-      console.log('✅ Appointments data:', appointmentsData);
-
-      // 3. Lọc appointments sắp tới (từ hôm nay trở đi)
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      const upcomingAppointments = appointmentsData
-        .filter(apt => {
-          const aptDate = new Date(apt.appointmentDate);
-          return aptDate >= today && apt.status !== 'canceled';
-        })
-        .sort((a, b) => {
-          const dateA = new Date(a.appointmentDate + 'T' + a.appointmentTime);
-          const dateB = new Date(b.appointmentDate + 'T' + b.appointmentTime);
-          return dateA - dateB;
-        });
-
-      setAppointments(upcomingAppointments);
-
-      // 4. Tính toán stats
-      setQuickStats({
-        total: upcomingAppointments.length,
-        confirmed: upcomingAppointments.filter(apt => apt.status === 'confirmed').length,
-        pending: upcomingAppointments.filter(apt => apt.status === 'pending').length
-      });
-
-    } catch (err) {
-      console.error('❌ Error fetching data:', err);
-      setError('Không thể tải dữ liệu. Vui lòng thử lại.');
-    } finally {
-      setLoading(false);
+    // 2. Lấy danh sách appointments - ƯU TIÊN TỪ patientData trước
+    let appointmentsData = [];
+    
+    const patientId = patientData.patientId || patientData.id;
+    console.log('🆔 Patient ID:', patientId);
+    
+    if (patientId) {
+      console.log('🔍 Fetching appointments from API for patient:', patientId);
+      try {
+        appointmentsData = await appointmentApi.getByPatient(patientId);
+        console.log('📊 API Response:', appointmentsData);
+        console.log('📊 Number of appointments from API:', appointmentsData?.length || 0);
+      } catch (apiError) {
+        console.error('❌ Error fetching appointments:', apiError);
+        console.error('❌ Error details:', apiError.response?.data || apiError.message);
+      }
+    } else {
+      console.error('❌ No patient ID found!');
     }
-  };
+
+    console.log('📊 Appointments data:', appointmentsData);
+    console.log('📊 Number of appointments:', appointmentsData.length);
+
+    // 3. Lọc appointments sắp tới (từ hôm nay trở đi)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const upcomingAppointments = appointmentsData
+  .filter(apt => {
+    const isNotCanceled = apt.status !== 'canceled';
+    
+    console.log(`📅 Appointment ${apt.appointmentId}:`, {
+      date: apt.appointmentDate,
+      status: apt.status,
+      isNotCanceled
+    });
+    
+    return isNotCanceled; // ← CHỈ LỌC BỎ "canceled"
+  })
+  .sort((a, b) => {
+    const dateA = new Date(a.appointmentDate + 'T' + a.appointmentTime);
+    const dateB = new Date(b.appointmentDate + 'T' + b.appointmentTime);
+    return dateB - dateA; // Mới nhất lên trước
+  });
+
+    console.log('✅ Filtered appointments:', upcomingAppointments);
+    setAppointments(upcomingAppointments);
+
+    // 4. Tính toán stats
+    setQuickStats({
+      total: upcomingAppointments.length,
+      confirmed: upcomingAppointments.filter(apt => apt.status === 'confirmed').length,
+      pending: upcomingAppointments.filter(apt => apt.status === 'pending').length
+    });
+
+  } catch (err) {
+    console.error('❌ Error fetching data:', err);
+    setError('Không thể tải dữ liệu. Vui lòng thử lại.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Handle appointment success
   const handleAppointmentSuccess = (appointmentData) => {
@@ -192,29 +239,29 @@ const PatientDashboard = () => {
         </div>
 
         <nav className="sidebar-nav">
-          {[
-            { id: 'appointments', icon: '📅', label: 'Lịch hẹn của tôi' },
-            { id: 'book', icon: '🩺', label: 'Đặt lịch khám' },
-            { id: 'doctors', icon: '👨‍⚕️', label: 'Đội ngũ bác sĩ' },
-            { id: 'medical-history', icon: '📋', label: 'Lịch sử khám' },
-            { id: 'prescriptions', icon: '💊', label: 'Đơn thuốc' },
-            { id: 'profile', icon: '👤', label: 'Hồ sơ cá nhân' }
-          ].map(tab => (
-            <button
-              key={tab.id}
-              className={`nav-item ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => {
-                setActiveTab(tab.id);
-                if (tab.id === 'book') {
-                  setShowAppointmentForm(true);
-                }
-              }}
-            >
-              <span className="nav-icon">{tab.icon}</span>
-              <span className="nav-label">{tab.label}</span>
-            </button>
-          ))}
-        </nav>
+        {[
+          { id: 'appointments', path: '/patient/dashboard', icon: '📅', label: 'Lịch hẹn của tôi' },
+          { id: 'book', path: null, icon: '🩺', label: 'Đặt lịch khám' },
+          { id: 'doctors', path: '/patient/doctors', icon: '👨‍⚕️', label: 'Đội ngũ bác sĩ' },
+          { id: 'medical-history', path: '/patient/history', icon: '📋', label: 'Lịch sử khám' },
+          { id: 'profile', path: '/patient/profile', icon: '👤', label: 'Hồ sơ cá nhân' }
+        ].map(tab => (
+          <button
+            key={tab.id}
+            className={`nav-item ${location.pathname === tab.path ? 'active' : ''}`}
+            onClick={() => {
+              if (tab.path) {
+                navigate(tab.path);
+              } else if (tab.id === 'book') {
+                setShowAppointmentForm(true);
+              }
+            }}
+          >
+            <span className="nav-icon">{tab.icon}</span>
+            <span className="nav-label">{tab.label}</span>
+          </button>
+        ))}
+      </nav>
 
         <div className="sidebar-footer">
           <div className="user-profile">
@@ -233,135 +280,155 @@ const PatientDashboard = () => {
 
       {/* Main Content */}
       <main className="dashboard-main">
-        <div className="main-header">
-          <h1>Lịch hẹn của tôi</h1>
-          <p>Quản lý và theo dõi các lịch hẹn khám bệnh</p>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="quick-stats">
-          <div className="stat-card">
-            <div className="stat-icon">📅</div>
-            <div className="stat-content">
-              <h3>{quickStats.total}</h3>
-              <p>Lịch hẹn</p>
+      <Routes>
+        {/* Trang chủ dashboard - Lịch hẹn */}
+        <Route path="/dashboard" element={
+          <>
+            <div className="main-header">
+              <h1>Lịch hẹn của tôi</h1>
+              <p>Quản lý và theo dõi các lịch hẹn khám bệnh</p>
             </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon">✅</div>
-            <div className="stat-content">
-              <h3>{quickStats.confirmed}</h3>
-              <p>Đã xác nhận</p>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon">⏳</div>
-            <div className="stat-content">
-              <h3>{quickStats.pending}</h3>
-              <p>Chờ xác nhận</p>
-            </div>
-          </div>
-        </div>
 
-        {/* Appointments List */}
-        <div className="appointments-section">
-          <div className="section-header">
-            <h2>Lịch hẹn sắp tới</h2>
-            <button 
-              className="btn-primary"
-              onClick={() => setShowAppointmentForm(true)}
-            >
-              <span>+</span>
-              Đặt lịch mới
-            </button>
-          </div>
-
-          {appointments.length === 0 ? (
-            <div className="no-appointments">
-              <div className="no-data-icon">📅</div>
-              <p>Bạn chưa có lịch hẹn nào</p>
-              <button 
-                className="btn-primary" 
-                style={{ marginTop: '1rem' }}
-                onClick={() => setShowAppointmentForm(true)}
-              >
-                Đặt lịch khám ngay
-              </button>
-            </div>
-          ) : (
-            <div className="appointments-grid">
-              {appointments.map(appointment => (
-                <div key={appointment.appointmentId} className="appointment-card">
-                  <div className="appointment-header">
-                    <div className="doctor-info">
-                      <div className="doctor-avatar">👨‍⚕️</div>
-                      <div className="doctor-details">
-                        <h3>{appointment.doctorName}</h3>
-                        <p className="specialty">{appointment.specialty}</p>
-                      </div>
-                    </div>
-                    {getStatusBadge(appointment.status)}
-                  </div>
-
-                  <div className="appointment-body">
-                    <div className="appointment-type">
-                      <span className="type-icon">🩺</span>
-                      {appointment.reason || 'Khám tổng quát'}
-                    </div>
-                    <div className="appointment-datetime">
-                      <div className="date-time">
-                        <span className="date-icon">📅</span>
-                        {formatDate(appointment.appointmentDate)}
-                      </div>
-                      <div className="date-time">
-                        <span className="time-icon">🕒</span>
-                        {formatTime(appointment.appointmentTime)}
-                      </div>
-                    </div>
-                    {appointment.roomName && (
-                      <div className="appointment-room">
-                        <span className="room-icon">🏥</span>
-                        {appointment.roomName}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="appointment-actions">
-                    {appointment.status === 'pending' && (
-                      <>
-                        <button className="btn-cancel">Hủy lịch</button>
-                        <button className="btn-reschedule">Đổi lịch</button>
-                      </>
-                    )}
-                    {appointment.status === 'confirmed' && (
-                      <>
-                        <button className="btn-details">Xem chi tiết</button>
-                        <button className="btn-reminder">Nhắc lịch</button>
-                      </>
-                    )}
-                  </div>
+            {/* Quick Stats */}
+            <div className="quick-stats">
+              <div className="stat-card">
+                <div className="stat-icon">📅</div>
+                <div className="stat-content">
+                  <h3>{quickStats.total}</h3>
+                  <p>Lịch hẹn</p>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Upcoming Schedule */}
-        {appointments.length > 0 && (
-          <div className="schedule-section">
-            <h2>Lịch trình trong tuần</h2>
-            <div className="calendar-preview">
-              {getWeeklyCalendar().map((day, index) => (
-                <div key={index} className={`calendar-day ${day.isToday ? 'active' : ''}`}>
-                  <div className="day-name">{day.dayName}</div>
-                  <div className="day-date">{day.dayDate}</div>
-                  <div className="day-appointments">{day.appointments} lịch</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-icon">✅</div>
+                <div className="stat-content">
+                  <h3>{quickStats.confirmed}</h3>
+                  <p>Đã xác nhận</p>
                 </div>
-              ))}
+              </div>
+              <div className="stat-card">
+                <div className="stat-icon">⏳</div>
+                <div className="stat-content">
+                  <h3>{quickStats.pending}</h3>
+                  <p>Chờ xác nhận</p>
+                </div>
+              </div>
             </div>
-          </div>
-        )}
-      </main>
+
+            {/* Appointments List */}
+            <div className="appointments-section">
+              <div className="section-header">
+                <h2>Lịch hẹn sắp tới</h2>
+                <button 
+                  className="btn-primary"
+                  onClick={() => setShowAppointmentForm(true)}
+                >
+                  <span>+</span>
+                  Đặt lịch mới
+                </button>
+              </div>
+
+              {appointments.length === 0 ? (
+                <div className="no-appointments">
+                  <div className="no-data-icon">📅</div>
+                  <p>Bạn chưa có lịch hẹn nào</p>
+                  <button 
+                    className="btn-primary" 
+                    style={{ marginTop: '1rem' }}
+                    onClick={() => setShowAppointmentForm(true)}
+                  >
+                    Đặt lịch khám ngay
+                  </button>
+                </div>
+              ) : (
+                <div className="appointments-grid">
+                  {appointments.map(appointment => (
+                    <div key={appointment.appointmentId} className="appointment-card">
+                      <div className="appointment-header">
+                        <div className="doctor-info">
+                          <div className="doctor-avatar">👨‍⚕️</div>
+                          <div className="doctor-details">
+                            <h3>{appointment.doctorName}</h3>
+                            <p className="specialty">{appointment.specialty}</p>
+                          </div>
+                        </div>
+                        {getStatusBadge(appointment.status)}
+                      </div>
+
+                      <div className="appointment-body">
+                        <div className="appointment-type">
+                          <span className="type-icon">🩺</span>
+                          {appointment.reason || 'Khám tổng quát'}
+                        </div>
+                        <div className="appointment-datetime">
+                          <div className="date-time">
+                            <span className="date-icon">📅</span>
+                            {formatDate(appointment.appointmentDate)}
+                          </div>
+                          <div className="date-time">
+                            <span className="time-icon">🕒</span>
+                            {formatTime(appointment.appointmentTime)}
+                          </div>
+                        </div>
+                        {appointment.roomName && (
+                          <div className="appointment-room">
+                            <span className="room-icon">🏥</span>
+                            {appointment.roomName}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="appointment-actions">
+                        {appointment.status === 'pending' && (
+                          <>
+                            <button className="btn-cancel">Hủy lịch</button>
+                            <button className="btn-reschedule">Đổi lịch</button>
+                          </>
+                        )}
+                        {appointment.status === 'confirmed' && (
+                          <>
+                            <button className="btn-details">Xem chi tiết</button>
+                            <button className="btn-reminder">Nhắc lịch</button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Upcoming Schedule */}
+            {appointments.length > 0 && (
+              <div className="schedule-section">
+                <h2>Lịch trình trong tuần</h2>
+                <div className="calendar-preview">
+                  {getWeeklyCalendar().map((day, index) => (
+                    <div key={index} className={`calendar-day ${day.isToday ? 'active' : ''}`}>
+                      <div className="day-name">{day.dayName}</div>
+                      <div className="day-date">{day.dayDate}</div>
+                      <div className="day-appointments">{day.appointments} lịch</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        } />
+
+        {/* Trang bác sĩ */}
+        <Route path="/doctors" element={
+          <DoctorsPage isPatientView={true}
+            onBookAppointment={() => setShowAppointmentForm(true)} 
+          />
+        } />
+
+        {/* Lịch sử khám */}
+        <Route path="/history" element={<PatientMedicalHistory />} />
+
+        {/* Hồ sơ cá nhân */}
+        <Route path="/profile" element={<PatientProfile />} />
+      </Routes>
+    </main>
     </div>
   );
 };

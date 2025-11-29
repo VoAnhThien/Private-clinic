@@ -5,11 +5,22 @@ import java.time.LocalTime;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.clinic.backend.entity.Appointment;
 
 public interface AppointmentRepository extends JpaRepository<Appointment, Integer> {
-    List<Appointment> findByPatient_PatientId(String patientId);
+
+    // List<Appointment> findByPatient_PatientId(String patientId);
+    @Query("SELECT a FROM Appointment a " +
+          "JOIN FETCH a.patient p " +
+           "JOIN FETCH a.doctor d " +
+           "JOIN FETCH d.specialty " +
+           "LEFT JOIN FETCH a.room " +
+           "WHERE p.patientId = :patientId " +
+           "ORDER BY a.appointmentDate DESC, a.appointmentTime DESC")
+    List<Appointment> findByPatient_PatientId(@Param("patientId") String patientId); 
     List<Appointment> findByDoctor_DoctorId(Integer doctorId);
     List<Appointment> findByAppointmentDate(LocalDate date);
     List<Appointment> findByStatus(String status);

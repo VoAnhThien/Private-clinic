@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import './Css/AdminDashboard.css';
 import AdminAppointments from './AdminAppointments';
-// import AdminUsers from './AdminUsers';
-// import AdminDoctors from './AdminDoctors';
+import AdminUsers from './AdminUsers';
+import AdminDoctors from './AdminDoctors';
 
 const AdminDashboard = () => {
   const { user, logout } = useAuth();

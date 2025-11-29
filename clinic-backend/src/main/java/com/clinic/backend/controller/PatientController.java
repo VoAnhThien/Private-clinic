@@ -35,14 +35,23 @@ public class PatientController {
             .orElseThrow(() -> new RuntimeException("Không tìm thấy bệnh nhân"));
     }
 
-    // THÊM ENDPOINT NÀY
+    // @GetMapping("/by-email")
+    // public Patient getByEmail(@RequestParam String email) {
+    //     return repo.findByEmail(email)
+    //         .orElseThrow(() -> new RuntimeException("Không tìm thấy bệnh nhân với email: " + email));
+    // }
+
     @GetMapping("/by-email")
     public Patient getByEmail(@RequestParam String email) {
-        return repo.findByEmail(email)
+        System.out.println("🔍 Finding patient by email: " + email);
+        Patient patient = repo.findByEmail(email)
             .orElseThrow(() -> new RuntimeException("Không tìm thấy bệnh nhân với email: " + email));
+        
+        System.out.println("✅ Found patient ID: " + patient.getPatientId());
+        return patient;
     }
 
-    // THÊM ENDPOINT NÀY
+    
     @GetMapping("/by-account/{accountId}")
     public Patient getByAccountId(@PathVariable Integer accountId) {
         return repo.findByAccount_AccountId(accountId)
@@ -53,4 +62,6 @@ public class PatientController {
     public Patient create(@RequestBody Patient patient) {
         return repo.save(patient);
     }
+
+
 }

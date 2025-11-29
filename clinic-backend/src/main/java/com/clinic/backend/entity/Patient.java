@@ -6,6 +6,8 @@ import java.time.*;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 @Entity
 @Table(name = "patient")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
@@ -56,6 +58,7 @@ public class Patient {
 
     // Relationships
     @OneToMany(mappedBy = "patient")
+    @JsonBackReference
     private Set<Appointment> appointments = new HashSet<>();
 
     @OneToMany(mappedBy = "patient")

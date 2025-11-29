@@ -198,70 +198,80 @@ public class AdminServiceImpl implements AdminService {
     // ============ HELPER METHODS ============
 
     private UserDTO mapAccountToUserDTO(Account account) {
-        UserDTO dto = UserDTO.builder()
-                .accountId(account.getAccountId())
-                .email(account.getEmail())
-                .accountType(account.getAccountType())
-                .status(account.getStatus())
-                .createdAt(account.getCreatedAt())
-                .lastActive(account.getUpdatedAt())
-                .build();
+    UserDTO dto = UserDTO.builder()
+            .accountId(account.getAccountId())
+            .email(account.getEmail())
+            .accountType(account.getAccountType())
+            .status(account.getStatus())
+            .createdAt(account.getCreatedAt())
+            .lastActive(account.getUpdatedAt())
+            .build();
 
-        // Add specific info based on account type
-        switch (account.getAccountType().toLowerCase()) {
-            case "doctor":
-                Doctor doctor = doctorRepo.findByAccount_AccountId(account.getAccountId()).orElse(null);
-                if (doctor != null) {
-                    dto.setFullname(doctor.getFullname());
-                    dto.setPhone(doctor.getPhone());
-                    dto.setSpecialty(doctor.getSpecialty().getName());
-                    dto.setSpecialtyId(doctor.getSpecialty().getSpecialtyId());
-                    dto.setRoomName(doctor.getRoom() != null ? doctor.getRoom().getRoomName() : null);
-                }
-                break;
-            case "patient":
-                Patient patient = patientRepo.findByAccount_AccountId(account.getAccountId()).orElse(null);
-                if (patient != null) {
-                    dto.setFullname(patient.getFullname());
-                    dto.setPhone(patient.getPhone());
-                }
-                break;
-            case "admin":
-                Admin admin = adminRepo.findByAccount_AccountId(account.getAccountId()).orElse(null);
-                if (admin != null) {
-                    dto.setFullname(admin.getFullname());
-                    dto.setPhone(admin.getPhone());
-                    dto.setRole(admin.getRole());
-                }
-                break;
-        }
-
-        return dto;
+    // Add specific info based on account type
+    switch (account.getAccountType().toLowerCase()) {
+        case "doctor":
+            Doctor doctor = doctorRepo.findByAccount_AccountId(account.getAccountId()).orElse(null);
+            if (doctor != null) {
+                dto.setFullname(doctor.getFullname());
+                dto.setPhone(doctor.getPhone());
+                dto.setSpecialty(doctor.getSpecialty().getName());
+                dto.setSpecialtyId(doctor.getSpecialty().getSpecialtyId());
+                dto.setRoomName(doctor.getRoom() != null ? doctor.getRoom().getRoomName() : null);
+                dto.setRoomId(doctor.getRoom() != null ? doctor.getRoom().getRoomId() : null); // ← THÊM
+                dto.setConsultationFee(doctor.getConsultationFee()); // ← THÊM
+                dto.setExperienceYears(doctor.getExperienceYears()); // ← THÊM
+                dto.setQualification(doctor.getQualification()); // ← THÊM
+            }
+            break;
+        case "patient":
+            Patient patient = patientRepo.findByAccount_AccountId(account.getAccountId()).orElse(null);
+            if (patient != null) {
+                dto.setFullname(patient.getFullname());
+                dto.setPhone(patient.getPhone());
+            }
+            break;
+        case "admin":
+            Admin admin = adminRepo.findByAccount_AccountId(account.getAccountId()).orElse(null);
+            if (admin != null) {
+                dto.setFullname(admin.getFullname());
+                dto.setPhone(admin.getPhone());
+                dto.setRole(admin.getRole());
+            }
+            break;
     }
+
+    return dto;
+}
 
     private void createDoctor(Account account, CreateUserRequest request) {
         Specialty specialty = specialtyRepo.findById(request.getSpecialtyId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy chuyên khoa"));
+            .orElseThrow(() -> new RuntimeException("Không tìm thấy chuyên khoa"));
 
         Room room = request.getRoomId() != null
-                ? roomRepo.findById(request.getRoomId()).orElse(null)
-                : null;
+            ? roomRepo.findById(request.getRoomId()).orElse(null)
+            : null;
+
+    // ← LẤY CONSULTATION FEE TỪ REQUEST, NẾU KHÔNG CÓ THÌ MẶC ĐỊNH 200000
+        BigDecimal consultationFee = request.getConsultationFee() != null 
+            ? request.getConsultationFee() 
+            : new BigDecimal("200000");
 
         Doctor doctor = Doctor.builder()
-                .account(account)
-                .fullname(request.getFullname())
-                .phone(request.getPhone())
-                .specialty(specialty)
-                .room(room)
-                .qualification(request.getQualification())
-                .experienceYears(request.getExperienceYears())
-                .consultationFee(new BigDecimal("200000"))
-                .status("active")
-                .createdAt(LocalDateTime.now())
-                .build();
+            .account(account)
+            .fullname(request.getFullname())
+            .phone(request.getPhone())
+            .specialty(specialty)
+            .room(room)
+            .qualification(request.getQualification())
+            .experienceYears(request.getExperienceYears())
+            .consultationFee(consultationFee) // ← DÙNG GIÁ TRỊ TỪ REQUEST
+            .status("active")
+            .createdAt(LocalDateTime.now())
+            .build();
 
         doctorRepo.save(doctor);
     }
+
 
     private void createPatient(Account account, CreateUserRequest request) {
         Patient patient = new Patient();
@@ -307,6 +317,19 @@ public class AdminServiceImpl implements AdminService {
         if (request.getRoomId() != null) {
             Room room = roomRepo.findById(request.getRoomId()).orElse(null);
             doctor.setRoom(room);
+        }
+
+        // ← THÊM CẬP NHẬT CÁC FIELD MỚI
+        if (request.getConsultationFee() != null) {
+            doctor.setConsultationFee(request.getConsultationFee());
+        }
+        
+        if (request.getExperienceYears() != null) {
+            doctor.setExperienceYears(request.getExperienceYears());
+        }
+        
+        if (request.getQualification() != null) {
+            doctor.setQualification(request.getQualification());
         }
 
         doctorRepo.save(doctor);

@@ -1,11 +1,10 @@
 // src/pages/DoctorsPage.jsx
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { Search, Star, MapPin, Calendar, Filter, X, Phone, Mail } from 'lucide-react';
 import { doctorApi } from '../services/doctorApi';
 import './css/DoctorsPage.css';
 
-export default function DoctorsPage() {
+export default function DoctorsPage({ isPatientView = false, onBookAppointment }) {
   const [doctors, setDoctors] = useState([]);
   const [filteredDoctors, setFilteredDoctors] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -14,37 +13,40 @@ export default function DoctorsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Danh sách chuyên khoa từ dữ liệu thật
   const specialties = [
     'Nhi khoa', 'Tim mạch', 'Nội tiết', 'Thần kinh', 'Tiêu hóa',
-    'Da liễu', 'Sản phụ khoa', 'Mắt', 'Tai Mũi Họng', 'Xương khớp', 'Răng Hàm Mặt', 'Tâm lý'
+    'Da liễu', 'Sản phụ khoa', 'Mắt', 'Tai Mũi Họng', 'Xương khớp', 
+    'Răng Hàm Mặt', 'Tâm lý', 'Nội tổng quát'
   ];
 
-  // Lấy dữ liệu bác sĩ từ API
   useEffect(() => {
-    const fetchDoctors = async () => {
-      try {
-        setLoading(true);
-        const doctorsData = await doctorApi.getAll();
-        console.log('Doctors data:', doctorsData); // Debug log
-        setDoctors(doctorsData);
-        setFilteredDoctors(doctorsData);
-      } catch (err) {
-        console.error('Error fetching doctors:', err);
-        setError('Không thể tải danh sách bác sĩ. Vui lòng thử lại sau.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchDoctors();
   }, []);
 
-  // Lọc bác sĩ
   useEffect(() => {
+    filterDoctors();
+  }, [searchTerm, selectedSpecialty, doctors]);
+
+  const fetchDoctors = async () => {
+    try {
+      setLoading(true);
+      const doctorsData = await doctorApi.getAll();
+      console.log('Doctors data:', doctorsData);
+      // Chỉ hiện bác sĩ đang hoạt động
+      const activeDoctors = doctorsData.filter(d => d.status === 'active');
+      setDoctors(activeDoctors);
+      setFilteredDoctors(activeDoctors);
+    } catch (err) {
+      console.error('Error fetching doctors:', err);
+      setError('Không thể tải danh sách bác sĩ. Vui lòng thử lại sau.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filterDoctors = () => {
     let results = doctors;
     
-    // Lọc theo từ khóa tìm kiếm
     if (searchTerm) {
       results = results.filter(doctor =>
         doctor.fullname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -53,7 +55,6 @@ export default function DoctorsPage() {
       );
     }
     
-    // Lọc theo chuyên khoa
     if (selectedSpecialty) {
       results = results.filter(doctor =>
         doctor.specialtyName === selectedSpecialty
@@ -61,7 +62,7 @@ export default function DoctorsPage() {
     }
     
     setFilteredDoctors(results);
-  }, [searchTerm, selectedSpecialty, doctors]);
+  };
 
   const clearFilters = () => {
     setSearchTerm('');
@@ -76,9 +77,18 @@ export default function DoctorsPage() {
       .toUpperCase() || 'BS';
   };
 
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('vi-VN').format(amount) + 'đ';
+  };
+
   const handleBookAppointment = (doctor) => {
-    // Điều hướng đến trang đặt lịch với doctorId
-    window.location.href = `/appointment?doctorId=${doctor.doctorId}`;
+    if (isPatientView && onBookAppointment) {
+      // Nếu là patient view, gọi callback để mở modal
+      onBookAppointment(doctor);
+    } else {
+      // Nếu là public view, chuyển đến trang đặt lịch
+      window.location.href = `/appointment?doctorId=${doctor.doctorId}`;
+    }
   };
 
   if (loading) {
@@ -111,18 +121,28 @@ export default function DoctorsPage() {
   }
 
   return (
-    <div className="doctors-page">
-      {/* Header Section */}
-      <section className="doctors-hero">
-        <div className="container">
-          <div className="hero-content">
-            <h1 className="hero-title">Đội Ngũ Bác Sĩ</h1>
-            <p className="hero-description">
-              Khám phá đội ngũ bác sĩ giàu kinh nghiệm, chuyên môn cao và tận tâm với bệnh nhân
-            </p>
+    <div className={`doctors-page ${isPatientView ? 'patient-view' : ''}`}>
+      {/* Header Section - Chỉ hiện khi public view */}
+      {!isPatientView && (
+        <section className="doctors-hero">
+          <div className="container">
+            <div className="hero-content">
+              <h1 className="hero-title">Đội Ngũ Bác Sĩ</h1>
+              <p className="hero-description">
+                Khám phá đội ngũ bác sĩ giàu kinh nghiệm, chuyên môn cao và tận tâm với bệnh nhân
+              </p>
+            </div>
           </div>
+        </section>
+      )}
+
+      {/* Patient view header */}
+      {isPatientView && (
+        <div className="page-header">
+          <h1>Đội ngũ bác sĩ</h1>
+          <p>Tìm và đặt lịch với bác sĩ phù hợp</p>
         </div>
-      </section>
+      )}
 
       {/* Search and Filter Section */}
       <section className="search-section">
@@ -229,9 +249,11 @@ export default function DoctorsPage() {
                       <p className="doctor-specialty">
                         {doctor.specialtyName || 'Chưa xác định chuyên khoa'}
                       </p>
-                      <span className="doctor-status">
-                        {doctor.status === 'active' ? '🟢 Đang làm việc' : '🔴 Tạm nghỉ'}
-                      </span>
+                      {doctor.experienceYears && (
+                        <span className="doctor-experience">
+                          {doctor.experienceYears} năm kinh nghiệm
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -252,6 +274,12 @@ export default function DoctorsPage() {
                         <span>{doctor.email}</span>
                       </div>
                     )}
+                    {doctor.consultationFee && (
+                      <div className="detail-item fee">
+                        <span>💰 Phí khám:</span>
+                        <strong>{formatCurrency(doctor.consultationFee)}</strong>
+                      </div>
+                    )}
                   </div>
 
                   <div className="doctor-actions">
@@ -262,9 +290,11 @@ export default function DoctorsPage() {
                       <Calendar size={18} />
                       Đặt lịch khám
                     </button>
-                    <button className="btn-profile">
-                      <span>Chi tiết</span>
-                    </button>
+                    {!isPatientView && (
+                      <button className="btn-profile">
+                        <span>Chi tiết</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

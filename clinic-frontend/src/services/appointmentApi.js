@@ -22,8 +22,8 @@ export const appointmentApi = {
 
   // Lấy lịch hẹn của patient
   getByPatient: async (patientId) => {
-    const response = await api.get(`/appointments/patient/${patientId}`);
-    return response.data;
+  const response = await api.get(`/appointments/patient/${patientId}`);
+  return response.data;
   },
 
   // Tạo lịch hẹn mới
