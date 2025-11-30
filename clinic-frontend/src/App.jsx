@@ -1,16 +1,19 @@
-// src/App.jsx 
+// src/App.jsx
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
+
+// IMPORT PAGES
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import HomePage from './pages/HomePage';           // ← Trang chủ công khai (chưa đăng nhập)
+import HomePage from './pages/HomePage';
 import DoctorsPage from './pages/DoctorsPage';
 import ContactPage from './pages/ContactPage';
-import ServicesPage from './pages/ServicesPage';  
+import ServicesPage from './pages/ServicesPage';
 import PatientDashboard from './pages/PatientDashboard';
 import DoctorDashboard from './pages/DoctorDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 
+// Protected Route Component
 function ProtectedRoute({ children, allowedRoles }) {
   const { user, loading } = useAuth();
 
@@ -33,44 +36,30 @@ function ProtectedRoute({ children, allowedRoles }) {
   return children;
 }
 
-//Trang chủ công khai cho người chưa đăng nhập
+// Public Home - Ai cũng xem được, kể cả đã login
 function PublicHome() {
-  const { user } = useAuth();
-
-  // Nếu đã đăng nhập → tự động chuyển về dashboard theo role
-  if (user) {
-    switch (user.role) {
-      case 'PATIENT': return <Navigate to="/patient/dashboard" replace />;
-      case 'DOCTOR':  return <Navigate to="/doctor/dashboard" replace />;
-      case 'ADMIN':   return <Navigate to="/admin/dashboard" replace />;
-      default:        return <Navigate to="/" replace />;
-    }
-  }
-
-  // Chưa đăng nhập → hiện trang chủ đẹp
+  // Không redirect nữa, để user tự do xem HomePage
   return <HomePage />;
 }
 
-export default function App() {
+// Router Component (bên trong AuthProvider)
+function AppRoutes() {
   return (
     <Router>
       <Routes>
-
-        {/* 1. Trang chủ công khai - ai cũng vào được */}
+        {/* 1. Trang chủ công khai */}
         <Route path="/" element={<PublicHome />} />
 
-        {/* 2. Login & Register - chỉ hiện khi chưa đăng nhập */}
+        {/* 2. Login & Register */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
 
-        {/* 3. TRANG BÁC SĨ - ai cũng xem được */}
+        {/* 3. Trang công khai */}
         <Route path="/doctors" element={<DoctorsPage />} />
-
         <Route path="/contact" element={<ContactPage />} />
-
         <Route path="/services" element={<ServicesPage />} />
 
-        {/* 4. Dashboard theo role - BẮT BUỘC đã đăng nhập + đúng role */}
+        {/* 4. Dashboard theo role */}
         <Route
           path="/patient/*"
           element={
@@ -98,10 +87,18 @@ export default function App() {
           }
         />
 
-        {/* 4. 404 */}
+        {/* 5. 404 */}
         <Route path="*" element={<Navigate to="/" replace />} />
-
       </Routes>
     </Router>
+  );
+}
+
+// Main App
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppRoutes />
+    </AuthProvider>
   );
 }

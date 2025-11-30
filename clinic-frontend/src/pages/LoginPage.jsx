@@ -15,7 +15,7 @@ export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
+  const handleChange = (e) => { 
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
