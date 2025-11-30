@@ -60,5 +60,18 @@ export const doctorApi = {
   getById: async (doctorId) => {
     const response = await api.get(`/doctors/${doctorId}`);
     return response.data;
+  },
+};
+
+// THÊM API MỚI - Medical Records
+export const medicalRecordApi = {
+  create: async (recordData) => {
+    const response = await api.post('/medical-records', recordData);
+    return response.data;
+  },
+
+  getByPatient: async (patientId) => {
+    const response = await api.get(`/medical-records/patient/${patientId}`);
+    return response.data;
   }
 };

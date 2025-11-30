@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { appointmentApi, doctorApi } from '../services/appointmentApi';
+import { appointmentApi, doctorApi, medicalRecordApi } from '../services/appointmentApi';
+import ExaminationModal from '../components/ExaminationModal';
 import './Css/DoctorDashboard.css';
 
 const DoctorDashboard = () => {
@@ -21,46 +22,44 @@ const DoctorDashboard = () => {
     weeklyAppointments: 0
   });
 
-  // Fetch doctor info và appointments khi component mount
+  // State cho modal
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [showExaminationModal, setShowExaminationModal] = useState(false);
+
+  // Fetch data
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const doctorData = await doctorApi.getByEmail(user.email);
+      setDoctorInfo(doctorData);
+
+      const appointmentsData = await appointmentApi.getByDoctor(doctorData.doctorId);
+      
+      const today = new Date().toISOString().split('T')[0];
+      const todayAppointments = appointmentsData.filter(apt => 
+        apt.appointmentDate === today
+      );
+      
+      setAppointments(todayAppointments);
+      setFilteredAppointments(todayAppointments);
+      calculateStats(todayAppointments, appointmentsData);
+
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError('Không thể tải dữ liệu. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // 1. Lấy thông tin doctor từ email
-        const doctorData = await doctorApi.getByEmail(user.email);
-        setDoctorInfo(doctorData);
-
-        // 2. Lấy danh sách appointments của doctor này
-        const appointmentsData = await appointmentApi.getByDoctor(doctorData.doctorId);
-        
-        // 3. Lọc appointments hôm nay
-        const today = new Date().toISOString().split('T')[0];
-        const todayAppointments = appointmentsData.filter(apt => 
-          apt.appointmentDate === today
-        );
-        
-        setAppointments(todayAppointments);
-        setFilteredAppointments(todayAppointments);
-
-        // 4. Tính toán stats
-        calculateStats(todayAppointments, appointmentsData);
-
-      } catch (err) {
-        console.error('Error fetching data:', err);
-        setError('Không thể tải dữ liệu. Vui lòng thử lại.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     if (user?.email) {
       fetchData();
     }
   }, [user]);
 
-  // Filter appointments khi statusFilter thay đổi
   useEffect(() => {
     if (statusFilter === 'all') {
       setFilteredAppointments(appointments);
@@ -71,11 +70,61 @@ const DoctorDashboard = () => {
     }
   }, [statusFilter, appointments]);
 
-  // Tính toán thống kê
+  // Handler "Bắt đầu khám"
+  const handleStartExamination = async (appointment) => {
+    try {
+      console.log('🩺 Bắt đầu khám:', appointment);
+      
+      await appointmentApi.updateStatus(appointment.appointmentId, 'in-progress');
+      await fetchData();
+      
+      setSelectedAppointment(appointment);
+      setShowExaminationModal(true);
+      
+      alert('✅ Đã chuyển sang trạng thái "Đang khám"');
+    } catch (error) {
+      console.error('❌ Error:', error);
+      alert('Lỗi: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
+  // Handler "Chi tiết"
+  const handleViewDetails = (appointment) => {
+    console.log('📋 Xem chi tiết:', appointment);
+    setSelectedAppointment(appointment);
+    setShowExaminationModal(true);
+  };
+
+  // Handler "Lưu kết quả"
+  const handleSaveExamination = async (data) => {
+    try {
+      console.log('💾 Lưu kết quả:', data);
+      
+      await medicalRecordApi.create({
+        patientId: selectedAppointment.patientId,
+        appointmentId: data.appointmentId,
+        symptoms: data.symptoms,
+        diagnosis: data.diagnosis,
+        treatment: data.treatment,
+        prescription: data.prescription,
+        notes: data.notes,
+        followUpDate: data.followUpDate || null
+      });
+
+      await appointmentApi.updateStatus(data.appointmentId, 'completed');
+      await fetchData();
+
+      alert('✅ Lưu kết quả khám thành công!');
+    } catch (error) {
+      console.error('❌ Error:', error);
+      alert('Lỗi: ' + (error.response?.data?.message || error.message));
+      throw error;
+    }
+  };
+
   const calculateStats = (todayAppts, allAppts) => {
     const today = new Date().toISOString().split('T')[0];
     
-    // Lấy ngày đầu tuần (Thứ 2)
     const startOfWeek = new Date();
     startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay() + 1);
     const startOfWeekStr = startOfWeek.toISOString().split('T')[0];
@@ -94,7 +143,6 @@ const DoctorDashboard = () => {
     });
   };
 
-  // Chuyển đổi status từ backend sang UI
   const getStatusBadge = (status) => {
     const statusConfig = {
       pending: { class: 'status-waiting', text: 'Chờ khám', icon: '⏳' },
@@ -112,15 +160,12 @@ const DoctorDashboard = () => {
     );
   };
 
-  // Format thời gian
   const formatTime = (timeString) => {
     if (!timeString) return '';
-    // Xử lý cả format "09:00:00" và "09:00"
     const parts = timeString.split(':');
     return `${parts[0]}:${parts[1]}`;
   };
 
-  // Format ngày
   const formatDate = (dateString) => {
     if (!dateString) return '';
     const date = new Date(dateString);
@@ -128,13 +173,11 @@ const DoctorDashboard = () => {
     return `${days[date.getDay()]}, ${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
   };
 
-  // Lấy ngày hiện tại
   const getCurrentDate = () => {
     const now = new Date();
     return formatDate(now.toISOString().split('T')[0]);
   };
 
-  // Lấy giờ hiện tại
   const getCurrentTime = () => {
     const now = new Date();
     return now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
@@ -167,7 +210,6 @@ const DoctorDashboard = () => {
 
   return (
     <div className="doctor-dashboard">
-      {/* Sidebar */}
       <aside className="dashboard-sidebar">
         <div className="sidebar-header">
           <div className="clinic-logo">
@@ -214,7 +256,6 @@ const DoctorDashboard = () => {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="dashboard-main">
         <div className="main-header">
           <div className="header-content">
@@ -227,7 +268,6 @@ const DoctorDashboard = () => {
           </div>
         </div>
 
-        {/* Quick Stats */}
         <div className="quick-stats">
           <div className="stat-card">
             <div className="stat-icon bg-blue-100">👥</div>
@@ -259,7 +299,6 @@ const DoctorDashboard = () => {
           </div>
         </div>
 
-        {/* Today's Appointments */}
         <div className="appointments-section">
           <div className="section-header">
             <h2>Danh sách bệnh nhân hôm nay</h2>
@@ -330,20 +369,45 @@ const DoctorDashboard = () => {
                       <div className="action-buttons">
                         {(appointment.status === 'pending' || appointment.status === 'confirmed') && (
                           <>
-                            <button className="btn-start">Bắt đầu khám</button>
-                            <button className="btn-details">Chi tiết</button>
+                            <button 
+                              className="btn-start"
+                              onClick={() => handleStartExamination(appointment)}
+                            >
+                              Bắt đầu khám
+                            </button>
+                            <button 
+                              className="btn-details"
+                              onClick={() => handleViewDetails(appointment)}
+                            >
+                              Chi tiết
+                            </button>
                           </>
                         )}
                         {appointment.status === 'completed' && (
                           <>
                             <button className="btn-view">Xem kết quả</button>
-                            <button className="btn-details">Hồ sơ</button>
+                            <button 
+                              className="btn-details"
+                              onClick={() => handleViewDetails(appointment)}
+                            >
+                              Hồ sơ
+                            </button>
                           </>
                         )}
                         {appointment.status === 'in-progress' && (
                           <>
-                            <button className="btn-start">Tiếp tục khám</button>
-                            <button className="btn-details">Chi tiết</button>
+                            <button 
+                              className="btn-start"
+                              onClick={() => handleViewDetails(appointment)}
+                            >
+                              Tiếp tục khám
+                            </button>
+                            <button 
+                              className="btn-details"
+                              onClick={() => handleViewDetails(appointment)}
+                            >
+                              Chi tiết
+                            </button>
                           </>
                         )}
                       </div>
@@ -355,7 +419,6 @@ const DoctorDashboard = () => {
           )}
         </div>
 
-        {/* Quick Actions */}
         <div className="quick-actions-section">
           <h2>Thao tác nhanh</h2>
           <div className="actions-grid">
@@ -378,6 +441,18 @@ const DoctorDashboard = () => {
           </div>
         </div>
       </main>
+
+      {/* Modal khám bệnh */}
+      {showExaminationModal && selectedAppointment && (
+        <ExaminationModal
+          appointment={selectedAppointment}
+          onClose={() => {
+            setShowExaminationModal(false);
+            setSelectedAppointment(null);
+          }}
+          onSave={handleSaveExamination}
+        />
+      )}
     </div>
   );
 };

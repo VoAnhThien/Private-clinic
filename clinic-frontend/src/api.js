@@ -3,7 +3,6 @@ import axios from 'axios';
 
 const API_URL = 'http://localhost:8080/api';
 
-
 const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -12,7 +11,7 @@ const api = axios.create({
 });
 
 console.log(api, "connection ");
-// Interceptor để tự động thêm token vào mọi request
+
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
