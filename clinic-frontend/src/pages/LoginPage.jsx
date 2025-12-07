@@ -24,19 +24,34 @@ export default function LoginPage() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
+  e.preventDefault();
+  setIsLoading(true);
+  setError('');
 
-    try {
-      await login(formData.email, formData.password);
-      navigate('/');
-    } catch (err) {
-      setError('Email hoặc mật khẩu không chính xác. Vui lòng thử lại.');
-    } finally {
-      setIsLoading(false);
+  try {
+    const userInfo = await login(formData.email, formData.password);
+    
+    // Chuyển đến dashboard theo role
+    switch(userInfo.role) {
+      case 'PATIENT':
+        navigate('/patient/dashboard');
+        break;
+      case 'DOCTOR':
+        navigate('/doctor/dashboard');
+        break;
+      case 'ADMIN':
+        navigate('/admin/dashboard');
+        break;
+      default:
+        navigate('/');
     }
-  };
+  } catch (err) {
+    console.error('Login error:', err);
+    setError('Email hoặc mật khẩu không chính xác. Vui lòng thử lại.');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleDemoLogin = (role) => {
     const demoAccounts = {

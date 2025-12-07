@@ -42,7 +42,10 @@ const AdminDoctors = () => {
     try {
       setLoading(true);
       const response = await api.get('/admin/users/type/doctor');
-      setDoctors(response.data);
+
+    const activeDoctors = response.data.filter(doc => doc.status === 'active');
+    setDoctors(activeDoctors);
+    
     } catch (error) {
       console.error('Lỗi tải danh sách bác sĩ:', error);
       alert('Không thể tải danh sách bác sĩ');

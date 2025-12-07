@@ -14,6 +14,7 @@ import lombok.Setter;
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class AppointmentResponse {
     private Integer appointmentId;
+    private String patientId; 
     private String patientName;
     private String patientEmail;
     private String patientPhone;

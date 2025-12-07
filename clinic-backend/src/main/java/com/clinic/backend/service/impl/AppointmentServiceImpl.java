@@ -55,7 +55,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy lịch hẹn: " + appointmentId));
         
         // Validate status
-        List<String> validStatuses = Arrays.asList("pending", "confirmed", "in_progress", "completed", "canceled");
+        List<String> validStatuses = Arrays.asList("pending", "confirmed", "in-progress", "completed", "canceled");
         if (!validStatuses.contains(status)) {
             throw new RuntimeException("Trạng thái không hợp lệ: " + status);
         }
@@ -182,7 +182,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .collect(Collectors.toList());
     }
 
-    // SỬA METHOD toResponse - THÊM THÔNG TIN SERVICE
+    //- THÊM THÔNG TIN SERVICE
     private AppointmentResponse toResponse(Appointment a) {
         // Tính phí bác sĩ
         BigDecimal doctorFee = a.getDoctor().getConsultationFee() != null 
@@ -206,6 +206,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         
         return AppointmentResponse.builder()
                 .appointmentId(a.getAppointmentId())
+                .patientId(a.getPatient().getPatientId())
                 .patientName(a.getContactFullname() != null ? a.getContactFullname() : a.getPatient().getFullname())
                 .patientEmail(a.getContactEmail() != null ? a.getContactEmail() : a.getPatient().getEmail())
                 .patientPhone(a.getContactPhone() != null ? a.getContactPhone() : a.getPatient().getPhone())

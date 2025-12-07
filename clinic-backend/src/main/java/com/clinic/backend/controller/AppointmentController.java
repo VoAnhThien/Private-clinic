@@ -68,8 +68,7 @@ public class AppointmentController {
         AppointmentResponse updatedAppointment = service.updateAppointmentStatus(id, status);
         return ResponseEntity.ok(updatedAppointment);
     }
-
-    // CÓ THỂ XÓA DTO UpdateStatusRequest NẾU KHÔNG DÙNG
+    
     @Data
     public static class UpdateStatusRequest {
         private String status;

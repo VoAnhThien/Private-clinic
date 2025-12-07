@@ -178,10 +178,6 @@ const AdminDashboard = () => {
               <span>🔄</span>
               Làm mới
             </button>
-            <button className="btn-primary">
-              <span>+</span>
-              Thêm mới
-            </button>
           </div>
         </div>
 

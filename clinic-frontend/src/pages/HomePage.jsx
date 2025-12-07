@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { 
   Search, Calendar, Stethoscope, Users, ChevronRight, Phone, MapPin, 
-  Star, Award, Clock, Shield, Menu, X
+  Star, Award, Clock, Shield, Menu, X, Mail, Facebook, Instagram, Twitter 
 } from 'lucide-react';
 import './Css/HomePage.css';
 import BookAppointment from '../components/BookAppointment';
@@ -312,29 +312,45 @@ function Footer() {
     <footer className="homepage-footer">
       <div className="container">
         <div className="footer-content">
+          {/* Brand Section */}
           <div className="footer-brand">
             <div className="brand-logo">🏥 Phòng Khám Tư</div>
             <p className="brand-description">
               Nền tảng đặt lịch khám bệnh trực tuyến hàng đầu Việt Nam, 
               kết nối bệnh nhân với các bác sĩ giỏi nhất.
             </p>
+            {/* Social Icons */}
+            <div className="footer-social">
+              <a href="#" className="social-link"><Facebook size={18} /></a>
+              <a href="#" className="social-link"><Instagram size={18} /></a>
+              <a href="#" className="social-link"><Twitter size={18} /></a>
+            </div>
           </div>
           
+          {/* Contact Section */}
           <div className="footer-contact">
             <h3>Liên hệ</h3>
             <div className="contact-item">
               <Phone className="contact-icon" />
-              <span>0355897327</span>
+              <span>0355 897 327</span>
             </div>
             <div className="contact-item">
               <MapPin className="contact-icon" />
-              <span>STU,HCM</span>
+              <span>STU, HCM</span>
+            </div>
+            <div className="contact-item">
+              <Mail className="contact-icon" />
+              <span>support@phongkhamtu.vn</span>
             </div>
           </div>
         </div>
         
+        {/* Bottom Section */}
         <div className="footer-bottom">
           <p>&copy; 2025 Phòng Khám Tư. Tất cả các quyền được bảo lưu.</p>
+          <p className="footer-links">
+            <a href="#">Điều khoản</a> | <a href="#">Chính sách bảo mật</a>
+          </p>
         </div>
       </div>
     </footer>

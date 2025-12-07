@@ -1,7 +1,8 @@
 // src/pages/AdminAppointments.jsx
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Calendar, Clock, User, Phone, Mail, MapPin, MoreVertical, Edit, Trash2, Eye } from 'lucide-react';
+import { Search, Filter, Calendar, Clock, User, Phone, Mail, MapPin, MoreVertical, Edit, Trash2, Eye, Plus } from 'lucide-react';
 import { appointmentApi } from '../services/appointmentApi';
+import BookAppointment from '../components/BookAppointment';
 import './Css/AdminAppointments.css';
 
 const AdminAppointments = () => {
@@ -11,6 +12,7 @@ const AdminAppointments = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const statusOptions = [
     { value: 'all', label: 'Tất cả trạng thái', color: '#6b7280' },
@@ -32,22 +34,19 @@ const AdminAppointments = () => {
   const fetchAppointments = async () => {
     try {
         setLoading(true);
-        // Sử dụng endpoint getAll thay vì getByDate
         const appointmentsData = await appointmentApi.getAll();
         setAppointments(appointmentsData);
     } catch (error) {
         console.error('Lỗi tải lịch hẹn:', error);
-        // Fallback với mock data nếu API chưa có
         setAppointments(getMockAppointments());
     } finally {
         setLoading(false);
     }
-};
+  };
 
   const filterAppointments = () => {
     let results = appointments;
 
-    // Lọc theo từ khóa tìm kiếm
     if (searchTerm) {
       results = results.filter(apt =>
         apt.patientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -56,12 +55,10 @@ const AdminAppointments = () => {
       );
     }
 
-    // Lọc theo trạng thái
     if (statusFilter !== 'all') {
       results = results.filter(apt => apt.status === statusFilter);
     }
 
-    // Lọc theo ngày
     if (dateFilter) {
       results = results.filter(apt => apt.appointmentDate === dateFilter);
     }
@@ -97,30 +94,32 @@ const AdminAppointments = () => {
   };
 
   const formatTime = (timeString) => {
-    return timeString; // Giữ nguyên định dạng HH:mm
+    return timeString;
   };
 
   const handleStatusChange = async (appointmentId, newStatus) => {
     try {
-        // Gọi API để cập nhật trong database
         await appointmentApi.updateStatus(appointmentId, newStatus);
-        
-        // Update local state để hiển thị ngay
         setAppointments(prev => prev.map(apt => 
-        apt.appointmentId === appointmentId 
+          apt.appointmentId === appointmentId 
             ? { ...apt, status: newStatus }
             : apt
         ));
-        
         console.log('Cập nhật trạng thái thành công:', appointmentId, newStatus);
     } catch (error) {
         console.error('Lỗi cập nhật trạng thái:', error);
         alert('Cập nhật trạng thái thất bại: ' + error.message);
-        
-        // Revert lại trạng thái cũ nếu lỗi
-        fetchAppointments(); // Load lại từ database
+        fetchAppointments();
     }
-    };
+  };
+
+  const handleCreateAppointment = () => {
+    setShowCreateModal(true);
+  };
+  const handleCreateSuccess = (newAppointment) => {
+    setShowCreateModal(false);
+    fetchAppointments(); // Reload danh sách
+  };
 
   const getMockAppointments = () => {
     return [
@@ -173,6 +172,13 @@ const AdminAppointments = () => {
 
   return (
     <div className="admin-appointments">
+      {showCreateModal && (
+      <BookAppointment 
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={handleCreateSuccess}
+        patientInfo={null}
+      />
+    )}
       {/* Header */}
       <div className="appointments-header">
         <div className="header-content">
@@ -180,9 +186,13 @@ const AdminAppointments = () => {
           <p>Quản lý và theo dõi tất cả lịch hẹn trong hệ thống</p>
         </div>
         <div className="header-actions">
-          <button className="btn-primary" onClick={fetchAppointments}>
+          <button className="btn-secondary" onClick={fetchAppointments}>
             <RefreshCw className="btn-icon" />
             Làm mới
+          </button>
+          <button className="btn-primary" onClick={handleCreateAppointment}>
+            <span>➕</span>
+            Tạo lịch hẹn
           </button>
         </div>
       </div>
@@ -358,7 +368,7 @@ const AdminAppointments = () => {
   );
 };
 
-// Thêm icon RefreshCw
+// Icons
 const RefreshCw = ({ className }) => (
   <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
     <path d="M23 4v6h-6"/>

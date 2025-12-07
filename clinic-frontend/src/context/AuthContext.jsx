@@ -53,7 +53,8 @@ export const AuthProvider = ({ children }) => {
 
       // Bước 2: Lấy thông tin user
       const meRes = await api.get("/auth/me", { 
-        params: { email },
+         params:{
+         email },
         headers: { Authorization: `Bearer ${token}` }
       });
 
