@@ -224,11 +224,6 @@ const DoctorDashboard = () => {
         <nav className="sidebar-nav">
           {[
             { id: 'today', icon: '📅', label: 'Lịch hôm nay' },
-            { id: 'schedule', icon: '🕒', label: 'Lịch làm việc' },
-            { id: 'patients', icon: '👥', label: 'Bệnh nhân' },
-            { id: 'medical-records', icon: '📋', label: 'Hồ sơ bệnh án' },
-            { id: 'prescriptions', icon: '💊', label: 'Kê đơn thuốc' },
-            { id: 'statistics', icon: '📊', label: 'Thống kê' }
           ].map(tab => (
             <button
               key={tab.id}
@@ -314,10 +309,10 @@ const DoctorDashboard = () => {
                 <option value="in-progress">Đang khám</option>
                 <option value="completed">Hoàn thành</option>
               </select>
-              <button className="btn-primary">
+              {/* <button className="btn-primary">
                 <span>+</span>
                 Thêm lịch khám
-              </button>
+              </button> */}
             </div>
           </div>
 

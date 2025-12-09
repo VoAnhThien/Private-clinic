@@ -281,6 +281,7 @@
 
 /* Appointments Section */
 .appointments-section {
+ 
   background: white;
   border-radius: 20px;
   padding: 36px;
@@ -291,8 +292,6 @@
   box-sizing: border-box;
   overflow: hidden;
 
-  margin-left: -32px !important;
-  margin-right: -32px !important;
 }
 
 .section-header {

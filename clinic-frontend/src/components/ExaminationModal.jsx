@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { medicalRecordApi } from '../services/appointmentApi';
+import './Css/ExaminationModal.css';
 
 const ExaminationModal = ({ appointment, onClose, onSave }) => {
   const [loading, setLoading] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(true);
   const [patientHistory, setPatientHistory] = useState([]);
+  const [selectedRecord, setSelectedRecord] = useState(null);
   const [formData, setFormData] = useState({
     symptoms: '',
     diagnosis: '',
@@ -12,17 +16,27 @@ const ExaminationModal = ({ appointment, onClose, onSave }) => {
     followUpDate: ''
   });
 
-  // Kiểm tra appointment có tồn tại không
   if (!appointment) {
     return null;
   }
 
   useEffect(() => {
-    // TODO: Fetch patient history từ API
-    setPatientHistory([
-      { date: '2025-10-15', diagnosis: 'Cảm cúm', doctor: 'BS. Nguyễn Văn A' },
-      { date: '2025-09-20', diagnosis: 'Đau đầu', doctor: 'BS. Trần Thị B' }
-    ]);
+    const fetchPatientHistory = async () => {
+      try {
+        setHistoryLoading(true);
+        if (appointment?.patientId) {
+          const history = await medicalRecordApi.getByPatient(appointment.patientId);
+          setPatientHistory(history || []);
+        }
+      } catch (error) {
+        console.error('Error fetching patient history:', error);
+        setPatientHistory([]);
+      } finally {
+        setHistoryLoading(false);
+      }
+    };
+
+    fetchPatientHistory();
   }, [appointment]);
 
   const handleChange = (e) => {
@@ -66,118 +80,66 @@ const ExaminationModal = ({ appointment, onClose, onSave }) => {
     return age;
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('vi-VN');
+  };
+
+  const handleViewRecordDetail = (record) => {
+    setSelectedRecord(record);
+  };
+
+  const handleCloseRecordDetail = () => {
+    setSelectedRecord(null);
+  };
+
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000,
-      padding: '20px'
-    }}>
-      <div style={{
-        backgroundColor: 'white',
-        borderRadius: '12px',
-        maxWidth: '1200px',
-        width: '100%',
-        maxHeight: '90vh',
-        overflow: 'auto',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
-      }}>
+    <div className="exam-modal-overlay">
+      <div className="exam-modal-container">
         {/* Header */}
-        <div style={{
-          padding: '24px',
-          borderBottom: '1px solid #e5e7eb',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          position: 'sticky',
-          top: 0,
-          backgroundColor: 'white',
-          zIndex: 10
-        }}>
+        <div className="exam-modal-header">
           <div>
-            <h2 style={{ margin: 0, fontSize: '24px', fontWeight: '600' }}>
-              Chi tiết khám bệnh
-            </h2>
-            <p style={{ margin: '4px 0 0', color: '#6b7280', fontSize: '14px' }}>
+            <h2>Hồ sơ bệnh nhân</h2>
+            <p className="exam-modal-subtitle">
               Mã lịch hẹn: #{appointment.appointmentId}
             </p>
           </div>
-          <button
-            onClick={onClose}
-            style={{
-              padding: '8px',
-              border: 'none',
-              background: 'none',
-              fontSize: '24px',
-              cursor: 'pointer',
-              color: '#6b7280'
-            }}
-          >
+          <button onClick={onClose} className="exam-modal-close-btn">
             ✕
           </button>
         </div>
 
         {/* Content */}
-        <div style={{ padding: '24px' }}>
+        <div className="exam-modal-content">
           {/* Thông tin bệnh nhân */}
-          <div style={{
-            backgroundColor: '#f9fafb',
-            padding: '20px',
-            borderRadius: '8px',
-            marginBottom: '24px'
-          }}>
-            <h3 style={{ 
-              margin: '0 0 16px', 
-              fontSize: '18px', 
-              fontWeight: '600',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}>
-              <span>👤</span>
+          <div className="patient-info-section">
+            <h3 className="section-title">
+              <span className="section-icon">👤</span>
               Thông tin bệnh nhân
             </h3>
             
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-              gap: '16px'
-            }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '14px', color: '#6b7280', marginBottom: '4px' }}>
-                  Họ tên
-                </label>
-                <div style={{ fontWeight: '500' }}>{appointment.patientName}</div>
+            <div className="patient-info-grid">
+              <div className="info-item">
+                <label>Họ tên</label>
+                <div className="info-value">{appointment.patientName}</div>
               </div>
               
-              <div>
-                <label style={{ display: 'block', fontSize: '14px', color: '#6b7280', marginBottom: '4px' }}>
-                  Tuổi
-                </label>
-                <div style={{ fontWeight: '500' }}>
+              <div className="info-item">
+                <label>Tuổi</label>
+                <div className="info-value">
                   {calculateAge(appointment.patientBirthdate)} tuổi
                 </div>
               </div>
               
-              <div>
-                <label style={{ display: 'block', fontSize: '14px', color: '#6b7280', marginBottom: '4px' }}>
-                  Số điện thoại
-                </label>
-                <div style={{ fontWeight: '500' }}>{appointment.patientPhone}</div>
+              <div className="info-item">
+                <label>Số điện thoại</label>
+                <div className="info-value">{appointment.patientPhone}</div>
               </div>
               
-              <div>
-                <label style={{ display: 'block', fontSize: '14px', color: '#6b7280', marginBottom: '4px' }}>
-                  Lý do khám
-                </label>
-                <div style={{ fontWeight: '500', color: '#3b82f6' }}>
+              <div className="info-item">
+                <label>Lý do khám</label>
+                <div className="info-value reason-text">
                   {appointment.reason || 'Khám tổng quát'}
                 </div>
               </div>
@@ -185,63 +147,104 @@ const ExaminationModal = ({ appointment, onClose, onSave }) => {
           </div>
 
           {/* Lịch sử khám bệnh */}
-          <div style={{ marginBottom: '24px' }}>
-            <h3 style={{ 
-              margin: '0 0 12px', 
-              fontSize: '18px', 
-              fontWeight: '600',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}>
-              <span>📋</span>
+          <div className="history-section">
+            <h3 className="section-title">
+              <span className="section-icon">📋</span>
               Lịch sử khám bệnh
             </h3>
             
-            {patientHistory.length === 0 ? (
-              <div style={{
-                padding: '20px',
-                textAlign: 'center',
-                color: '#6b7280',
-                backgroundColor: '#f9fafb',
-                borderRadius: '8px'
-              }}>
+            {historyLoading ? (
+              <div className="history-loading">
+                <div className="loading-spinner">⌛</div>
+                <p>Đang tải lịch sử...</p>
+              </div>
+            ) : patientHistory.length === 0 ? (
+              <div className="no-history">
                 Chưa có lịch sử khám bệnh
               </div>
             ) : (
-              <div style={{ 
-                border: '1px solid #e5e7eb', 
-                borderRadius: '8px',
-                overflow: 'hidden'
-              }}>
+              <div className="history-list">
                 {patientHistory.map((record, index) => (
-                  <div
-                    key={index}
-                    style={{
-                      padding: '12px 16px',
-                      borderBottom: index < patientHistory.length - 1 ? '1px solid #e5e7eb' : 'none',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontWeight: '500' }}>{record.diagnosis}</div>
-                      <div style={{ fontSize: '14px', color: '#6b7280' }}>
-                        {record.doctor} • {record.date}
+                  <div key={record.recordId || index} className="history-item">
+                    <div className="history-item-main">
+                      <div className="history-item-content">
+                        <div className="history-diagnosis">{record.diagnosis}</div>
+                        <div className="history-meta">
+                          {record.doctorName} • {formatDate(record.appointmentDate)}
+                        </div>
                       </div>
+                      <button 
+                        className="btn-view-detail"
+                        onClick={() => handleViewRecordDetail(record)}
+                      >
+                        Xem chi tiết
+                      </button>
                     </div>
-                    <button style={{
-                      padding: '6px 12px',
-                      fontSize: '14px',
-                      color: '#3b82f6',
-                      border: '1px solid #3b82f6',
-                      backgroundColor: 'white',
-                      borderRadius: '6px',
-                      cursor: 'pointer'
-                    }}>
-                      Xem chi tiết
-                    </button>
+                    
+                    {/* Chi tiết record - expand xuống khi được chọn */}
+                    {selectedRecord?.recordId === record.recordId && (
+                      <div className="record-detail-panel">
+                        <div className="record-detail-header">
+                          <h4>📄 Chi tiết hồ sơ khám</h4>
+                          <button 
+                            className="close-detail-btn"
+                            onClick={handleCloseRecordDetail}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                        
+                        <div className="record-detail-content">
+                          <div className="detail-row">
+                            <div className="detail-label">Triệu chứng:</div>
+                            <div className="detail-value">{record.symptoms || 'Không có'}</div>
+                          </div>
+                          
+                          <div className="detail-row">
+                            <div className="detail-label">Chẩn đoán:</div>
+                            <div className="detail-value highlight">{record.diagnosis}</div>
+                          </div>
+                          
+                          <div className="detail-row">
+                            <div className="detail-label">Phương pháp điều trị:</div>
+                            <div className="detail-value">{record.treatment || 'Không có'}</div>
+                          </div>
+                          
+                          <div className="detail-row">
+                            <div className="detail-label">Đơn thuốc:</div>
+                            <div className="detail-value prescription">
+                              {record.prescription || 'Không kê đơn'}
+                            </div>
+                          </div>
+                          
+                          {record.notes && (
+                            <div className="detail-row">
+                              <div className="detail-label">Ghi chú:</div>
+                              <div className="detail-value">{record.notes}</div>
+                            </div>
+                          )}
+                          
+                          {record.followUpDate && (
+                            <div className="detail-row">
+                              <div className="detail-label">Ngày tái khám:</div>
+                              <div className="detail-value followup">
+                                {formatDate(record.followUpDate)}
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div className="detail-row">
+                            <div className="detail-label">Bác sĩ khám:</div>
+                            <div className="detail-value">{record.doctorName}</div>
+                          </div>
+                          
+                          <div className="detail-row">
+                            <div className="detail-label">Ngày khám:</div>
+                            <div className="detail-value">{formatDate(record.appointmentDate)}</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -249,57 +252,32 @@ const ExaminationModal = ({ appointment, onClose, onSave }) => {
           </div>
 
           {/* Form khám bệnh */}
-          <div>
-            <h3 style={{ 
-              margin: '0 0 16px', 
-              fontSize: '18px', 
-              fontWeight: '600',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}>
-              <span>🩺</span>
+          <div className="examination-form-section">
+            <h3 className="section-title">
+              <span className="section-icon">🩺</span>
               Kết quả khám
             </h3>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div className="form-fields">
               {/* Triệu chứng */}
-              <div>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '8px',
-                  fontWeight: '500',
-                  fontSize: '14px'
-                }}>
-                  Triệu chứng <span style={{ color: 'red' }}>*</span>
+              <div className="form-group">
+                <label className="form-label">
+                  Triệu chứng <span className="required">*</span>
                 </label>
                 <textarea
                   name="symptoms"
                   value={formData.symptoms}
                   onChange={handleChange}
                   placeholder="Mô tả triệu chứng của bệnh nhân..."
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    minHeight: '100px',
-                    fontFamily: 'inherit',
-                    resize: 'vertical'
-                  }}
+                  className="form-textarea"
+                  rows="4"
                 />
               </div>
 
               {/* Chẩn đoán */}
-              <div>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '8px',
-                  fontWeight: '500',
-                  fontSize: '14px'
-                }}>
-                  Chẩn đoán <span style={{ color: 'red' }}>*</span>
+              <div className="form-group">
+                <label className="form-label">
+                  Chẩn đoán <span className="required">*</span>
                 </label>
                 <input
                   type="text"
@@ -307,163 +285,74 @@ const ExaminationModal = ({ appointment, onClose, onSave }) => {
                   value={formData.diagnosis}
                   onChange={handleChange}
                   placeholder="Kết quả chẩn đoán..."
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    fontSize: '14px'
-                  }}
+                  className="form-input"
                 />
               </div>
 
               {/* Phương pháp điều trị */}
-              <div>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '8px',
-                  fontWeight: '500',
-                  fontSize: '14px'
-                }}>
-                  Phương pháp điều trị <span style={{ color: 'red' }}>*</span>
+              <div className="form-group">
+                <label className="form-label">
+                  Phương pháp điều trị <span className="required">*</span>
                 </label>
                 <textarea
                   name="treatment"
                   value={formData.treatment}
                   onChange={handleChange}
                   placeholder="Mô tả phương pháp điều trị..."
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    minHeight: '100px',
-                    fontFamily: 'inherit',
-                    resize: 'vertical'
-                  }}
+                  className="form-textarea"
+                  rows="4"
                 />
               </div>
 
               {/* Đơn thuốc */}
-              <div>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '8px',
-                  fontWeight: '500',
-                  fontSize: '14px'
-                }}>
-                  Đơn thuốc
-                </label>
+              <div className="form-group">
+                <label className="form-label">Đơn thuốc</label>
                 <textarea
                   name="prescription"
                   value={formData.prescription}
                   onChange={handleChange}
                   placeholder="Liệt kê các loại thuốc và liều lượng..."
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    minHeight: '80px',
-                    fontFamily: 'inherit',
-                    resize: 'vertical'
-                  }}
+                  className="form-textarea"
+                  rows="3"
                 />
               </div>
 
               {/* Ghi chú */}
-              <div>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '8px',
-                  fontWeight: '500',
-                  fontSize: '14px'
-                }}>
-                  Ghi chú thêm
-                </label>
+              <div className="form-group">
+                <label className="form-label">Ghi chú thêm</label>
                 <textarea
                   name="notes"
                   value={formData.notes}
                   onChange={handleChange}
                   placeholder="Các lưu ý khác..."
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    minHeight: '80px',
-                    fontFamily: 'inherit',
-                    resize: 'vertical'
-                  }}
+                  className="form-textarea"
+                  rows="3"
                 />
               </div>
 
               {/* Ngày tái khám */}
-              <div>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '8px',
-                  fontWeight: '500',
-                  fontSize: '14px'
-                }}>
-                  Ngày tái khám
-                </label>
+              <div className="form-group">
+                <label className="form-label">Ngày tái khám</label>
                 <input
                   type="date"
                   name="followUpDate"
                   value={formData.followUpDate}
                   onChange={handleChange}
                   min={new Date().toISOString().split('T')[0]}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    fontSize: '14px'
-                  }}
+                  className="form-input"
                 />
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div style={{
-              marginTop: '24px',
-              display: 'flex',
-              gap: '12px',
-              justifyContent: 'flex-end',
-              paddingTop: '20px',
-              borderTop: '1px solid #e5e7eb'
-            }}>
-              <button
-                onClick={onClose}
-                style={{
-                  padding: '12px 24px',
-                  border: '1px solid #d1d5db',
-                  backgroundColor: 'white',
-                  borderRadius: '8px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  fontSize: '14px'
-                }}
-              >
+            <div className="form-actions">
+              <button onClick={onClose} className="btn-cancel">
                 Hủy
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={loading}
-                style={{
-                  padding: '12px 24px',
-                  border: 'none',
-                  backgroundColor: loading ? '#9ca3af' : '#3b82f6',
-                  color: 'white',
-                  borderRadius: '8px',
-                  fontWeight: '500',
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  fontSize: '14px'
-                }}
+                className="btn-save"
               >
                 {loading ? 'Đang lưu...' : '💾 Lưu kết quả khám'}
               </button>
