@@ -28,7 +28,6 @@ const PatientDashboard = () => {
   useEffect(() => {
     fetchData();
     
-    // CHỈ auto refresh KHI KHÔNG MỞ MODAL
     if (!showAppointmentForm) {
       const interval = setInterval(() => {
         console.log('🔄 Auto refreshing appointments...');
@@ -44,11 +43,9 @@ const PatientDashboard = () => {
       setLoading(true);
       setError(null);
 
-      // 1. Lấy thông tin patient
       const patientData = await patientApi.getByEmail(user.email);
       setPatientInfo(patientData);
 
-      // 2. Lấy appointments
       let appointmentsData = [];
       const patientId = patientData.patientId || patientData.id;
       
@@ -60,7 +57,6 @@ const PatientDashboard = () => {
         }
       }
 
-      // 3. Lọc và sắp xếp
       const upcomingAppointments = appointmentsData
         .filter(apt => apt.status !== 'canceled')
         .sort((a, b) => {
@@ -71,7 +67,6 @@ const PatientDashboard = () => {
 
       setAppointments(upcomingAppointments);
 
-      // 4. Tính stats
       setQuickStats({
         total: upcomingAppointments.length,
         confirmed: upcomingAppointments.filter(apt => apt.status === 'confirmed').length,
@@ -182,7 +177,6 @@ const PatientDashboard = () => {
         />
       )}
 
-      {/* Sidebar */}
       <aside className="dashboard-sidebar">
         <div className="sidebar-header">
           <div className="clinic-logo">
@@ -236,7 +230,6 @@ const PatientDashboard = () => {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="dashboard-main">
         <Routes>
           <Route path="/dashboard" element={
@@ -248,7 +241,6 @@ const PatientDashboard = () => {
                 </div>
               </div>
 
-              {/* Quick Stats */}
               <div className="quick-stats">
                 <div className="stat-card stat-total">
                   <div className="stat-icon">📅</div>
@@ -273,7 +265,6 @@ const PatientDashboard = () => {
                 </div>
               </div>
 
-              {/* Appointments List */}
               <div className="appointments-section">
                 <div className="section-header">
                   <h2>📋 Lịch hẹn của tôi</h2>
@@ -297,11 +288,11 @@ const PatientDashboard = () => {
                     {appointments.map(appointment => (
                       <div key={appointment.appointmentId} className="appointment-card">
                         <div className="appointment-header">
-                          <div className="doctor-info">
-                            <div className="doctor-avatar">👨‍⚕️</div>
-                            <div className="doctor-details">
+                          <div className="appt-doctor-info">
+                            <div className="appt-doctor-avatar">👨‍⚕️</div>
+                            <div className="appt-doctor-details">
                               <h3>{appointment.doctorName}</h3>
-                              <p className="specialty">{appointment.specialty}</p>
+                              <p className="appt-specialty">{appointment.specialty}</p>
                             </div>
                           </div>
                           {getStatusBadge(appointment.status)}
@@ -313,11 +304,11 @@ const PatientDashboard = () => {
                             {appointment.reason || 'Khám tổng quát'}
                           </div>
                           <div className="appointment-datetime">
-                            <div className="date-time">
+                            <div className="appt-date-time">
                               <span className="date-icon">📅</span>
                               {formatDate(appointment.appointmentDate)}
                             </div>
-                            <div className="date-time">
+                            <div className="appt-date-time">
                               <span className="time-icon">🕒</span>
                               {formatTime(appointment.appointmentTime)}
                             </div>
@@ -350,7 +341,6 @@ const PatientDashboard = () => {
                 )}
               </div>
 
-              {/* Weekly Calendar */}
               {appointments.length > 0 && (
                 <div className="schedule-section">
                   <h2>📆 Lịch trình trong tuần</h2>

@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "patient")
@@ -62,5 +63,6 @@ public class Patient {
     private Set<Appointment> appointments = new HashSet<>();
 
     @OneToMany(mappedBy = "patient")
+    @JsonIgnore
     private Set<MedicalRecord> medicalRecords = new HashSet<>();
 }

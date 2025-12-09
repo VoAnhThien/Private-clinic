@@ -1,3 +1,5 @@
+/* PatientDashboard.css*/
+
 .patient-dashboard {
   display: flex;
   min-height: 100vh;
@@ -285,6 +287,12 @@
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
   margin-bottom: 32px;
   border: 1px solid #e5e7eb;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+
+  margin-left: -32px !important;
+  margin-right: -32px !important;
 }
 
 .section-header {
@@ -350,11 +358,15 @@
 /* Appointments Grid */
 .appointments-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr));
   gap: 24px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 .appointment-card {
+  min-width: 0; /* Rất quan trọng khi dùng grid + 1fr */
   background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
   border: 2px solid #e2e8f0;
   border-radius: 16px;
@@ -362,6 +374,8 @@
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .appointment-card::before {
@@ -393,13 +407,14 @@
   margin-bottom: 20px;
 }
 
-.doctor-info {
+/* FIXED: Appointment-specific doctor info classes */
+.appt-doctor-info {
   display: flex;
   align-items: center;
   gap: 14px;
 }
 
-.doctor-avatar {
+.appt-doctor-avatar {
   width: 52px;
   height: 52px;
   background: linear-gradient(135deg, #dbeafe, #bfdbfe);
@@ -411,14 +426,14 @@
   flex-shrink: 0;
 }
 
-.doctor-details h3 {
+.appt-doctor-details h3 {
   margin: 0 0 6px 0;
   font-size: 1.125rem;
   font-weight: 600;
   color: #1f2937;
 }
 
-.specialty {
+.appt-specialty {
   margin: 0;
   color: #6b7280;
   font-size: 0.9rem;
@@ -481,7 +496,8 @@
   margin-bottom: 10px;
 }
 
-.date-time {
+/* FIXED: Appointment-specific date-time class */
+.appt-date-time {
   display: flex;
   align-items: center;
   gap: 8px;

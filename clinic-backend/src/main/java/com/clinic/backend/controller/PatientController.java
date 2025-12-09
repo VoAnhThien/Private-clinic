@@ -35,12 +35,6 @@ public class PatientController {
             .orElseThrow(() -> new RuntimeException("Không tìm thấy bệnh nhân"));
     }
 
-    // @GetMapping("/by-email")
-    // public Patient getByEmail(@RequestParam String email) {
-    //     return repo.findByEmail(email)
-    //         .orElseThrow(() -> new RuntimeException("Không tìm thấy bệnh nhân với email: " + email));
-    // }
-
     @GetMapping("/by-email")
     public Patient getByEmail(@RequestParam String email) {
         System.out.println("🔍 Finding patient by email: " + email);

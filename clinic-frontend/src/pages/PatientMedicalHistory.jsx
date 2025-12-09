@@ -1,48 +1,61 @@
 // src/pages/PatientMedicalHistory.jsx
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, User, FileText, Activity } from 'lucide-react';
-import { appointmentApi } from '../services/appointmentApi';
+import { Calendar, Clock, User, FileText, Activity, Stethoscope, Pill } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { patientApi } from '../services/patientApi';
+import { medicalRecordApi } from '../services/medicalRecordApi';
 import './Css/PatientMedicalHistory.css';
 
 const PatientMedicalHistory = () => {
   const { user } = useAuth();
-  const [appointments, setAppointments] = useState([]);
+  const [medicalRecords, setMedicalRecords] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all'); // all, completed, canceled
+  const [selectedRecord, setSelectedRecord] = useState(null);
+  const [showDetail, setShowDetail] = useState(false);
 
   useEffect(() => {
-    fetchHistory();
+    fetchMedicalHistory();
   }, [user]);
 
-  const fetchHistory = async () => {
+  const fetchMedicalHistory = async () => {
     try {
       setLoading(true);
-      const patientData = await patientApi.getByEmail(user.email);
-      const allAppointments = await appointmentApi.getByPatient(patientData.patientId);
       
-      // Lấy lịch sử (các lịch đã qua)
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      // Lấy thông tin bệnh nhân từ user email
+      const response = await patientApi.getByEmail(user.email);
+      const patientData = Array.isArray(response) 
+        ? response.find(r => r.accountType === 'patient')
+        : response;
+
+      if (!patientData?.patientId) {
+        console.error('Không tìm thấy patientId');
+        return;
+      }
+
+      const patientId = patientData.patientId;
+      console.log('Patient ID:', patientId);
       
-      const history = allAppointments
-        .filter(apt => {
-          const aptDate = new Date(apt.appointmentDate);
-          return aptDate < today || ['completed', 'canceled'].includes(apt.status);
-        })
-        .sort((a, b) => {
-          const dateA = new Date(a.appointmentDate + 'T' + a.appointmentTime);
-          const dateB = new Date(b.appointmentDate + 'T' + b.appointmentTime);
-          return dateB - dateA; // Mới nhất trước
-        });
+      // Lấy lịch sử khám
+      const records = await medicalRecordApi.getByPatient(patientId);
+      if (!Array.isArray(records)) {
+        console.error('Records is not an array:', records);
+        setMedicalRecords([]);
+        return;
+      }
+       // Sắp xếp theo ngày mới nhất
+      const sortedRecords = records.sort((a, b) => 
+        new Date(b.createdAt) - new Date(a.createdAt)
+      );
+
+      setMedicalRecords(sortedRecords);
+      } catch (error) {
+        console.error('Error fetching medical history:', error);
+        setMedicalRecords([]);
+      } finally {
+        setLoading(false);
+      }
       
-      setAppointments(history);
-    } catch (error) {
-      console.error('Error fetching history:', error);
-    } finally {
-      setLoading(false);
-    }
+     
   };
 
   const formatDate = (dateString) => {
@@ -54,26 +67,21 @@ const PatientMedicalHistory = () => {
     });
   };
 
-  const formatTime = (timeString) => {
-    if (!timeString) return '';
-    const parts = timeString.split(':');
-    return `${parts[0]}:${parts[1]}`;
+  const formatDateTime = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
-  const getStatusBadge = (status) => {
-    const config = {
-      completed: { class: 'completed', text: 'Hoàn thành', icon: '✅' },
-      canceled: { class: 'canceled', text: 'Đã hủy', icon: '❌' },
-      confirmed: { class: 'confirmed', text: 'Đã xác nhận', icon: '🔵' }
-    };
-    const badge = config[status] || config.completed;
-    return <span className={`status-badge ${badge.class}`}>{badge.icon} {badge.text}</span>;
+  const handleViewDetail = (record) => {
+    setSelectedRecord(record);
+    setShowDetail(true);
   };
-
-  const filteredAppointments = appointments.filter(apt => {
-    if (filter === 'all') return true;
-    return apt.status === filter;
-  });
 
   if (loading) {
     return (
@@ -88,86 +96,145 @@ const PatientMedicalHistory = () => {
     <div className="medical-history">
       <div className="page-header">
         <h1>Lịch sử khám bệnh</h1>
-        <p>Xem lại các lần khám trước đây</p>
+        <p>Hồ sơ bệnh án và các lần khám đã hoàn thành</p>
       </div>
 
-      {/* Filter */}
-      <div className="filter-tabs">
-        <button
-          className={`filter-tab ${filter === 'all' ? 'active' : ''}`}
-          onClick={() => setFilter('all')}
-        >
-          Tất cả ({appointments.length})
-        </button>
-        <button
-          className={`filter-tab ${filter === 'completed' ? 'active' : ''}`}
-          onClick={() => setFilter('completed')}
-        >
-          Hoàn thành ({appointments.filter(a => a.status === 'completed').length})
-        </button>
-        <button
-          className={`filter-tab ${filter === 'canceled' ? 'active' : ''}`}
-          onClick={() => setFilter('canceled')}
-        >
-          Đã hủy ({appointments.filter(a => a.status === 'canceled').length})
-        </button>
-      </div>
-
-      {/* History Timeline */}
-      {filteredAppointments.length === 0 ? (
+      {/* Medical Records List */}
+      {medicalRecords.length === 0 ? (
         <div className="no-history">
           <Activity size={64} />
           <h3>Chưa có lịch sử khám</h3>
-          <p>Các lịch khám đã hoàn thành sẽ hiển thị ở đây</p>
+          <p>Các lần khám đã hoàn thành sẽ hiển thị ở đây</p>
         </div>
       ) : (
         <div className="history-timeline">
-          {filteredAppointments.map(apt => (
-            <div key={apt.appointmentId} className="history-item">
+          {medicalRecords.map(record => (
+            <div key={record.recordId} className="history-item">
               <div className="timeline-marker"></div>
               <div className="history-card">
                 <div className="history-header">
                   <div className="date-info">
                     <Calendar size={20} />
-                    <span>{formatDate(apt.appointmentDate)}</span>
+                    <span>{formatDate(record.appointmentDate)}</span>
                     <Clock size={20} />
-                    <span>{formatTime(apt.appointmentTime)}</span>
+                    <span>{formatDateTime(record.createdAt)}</span>
                   </div>
-                  {getStatusBadge(apt.status)}
+                  <span className="status-badge completed">✅ Đã khám</span>
                 </div>
 
                 <div className="history-body">
                   <div className="doctor-info">
                     <User size={20} />
                     <div>
-                      <strong>{apt.doctorName}</strong>
-                      <span>{apt.specialty}</span>
+                      <strong>BS. {record.doctorName}</strong>
                     </div>
                   </div>
 
-                  {apt.reason && (
-                    <div className="reason">
-                      <FileText size={18} />
-                      <p>{apt.reason}</p>
+                  {record.symptoms && (
+                    <div className="info-row">
+                      <Stethoscope size={18} />
+                      <div>
+                        <strong>Triệu chứng:</strong>
+                        <p>{record.symptoms}</p>
+                      </div>
                     </div>
                   )}
 
-                  {apt.roomName && (
-                    <div className="room">
-                      <span>📍 {apt.roomName}</span>
+                  {record.diagnosis && (
+                    <div className="info-row diagnosis">
+                      <FileText size={18} />
+                      <div>
+                        <strong>Chẩn đoán:</strong>
+                        <p>{record.diagnosis}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {record.treatment && (
+                    <div className="info-row">
+                      <Pill size={18} />
+                      <div>
+                        <strong>Điều trị:</strong>
+                        <p>{record.treatment}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {record.followUpDate && (
+                    <div className="follow-up">
+                      <Calendar size={16} />
+                      <span>Tái khám: {formatDate(record.followUpDate)}</span>
                     </div>
                   )}
                 </div>
 
-                {apt.status === 'completed' && (
-                  <div className="history-actions">
-                    <button className="btn-secondary">Xem chi tiết</button>
-                    <button className="btn-primary">Đặt lịch lại</button>
-                  </div>
-                )}
+                <div className="history-actions">
+                  <button 
+                    className="btn-primary"
+                    onClick={() => handleViewDetail(record)}
+                  >
+                    Xem chi tiết
+                  </button>
+                </div>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Detail Modal */}
+      {showDetail && selectedRecord && (
+        <div className="modal-overlay" onClick={() => setShowDetail(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Chi tiết hồ sơ bệnh án</h2>
+              <button className="close-btn" onClick={() => setShowDetail(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="detail-section">
+                <h3>Thông tin khám</h3>
+                <p><strong>Ngày khám:</strong> {formatDate(selectedRecord.appointmentDate)}</p>
+                <p><strong>Bác sĩ:</strong> BS. {selectedRecord.doctorName}</p>
+                <p><strong>Thời gian tạo:</strong> {formatDateTime(selectedRecord.createdAt)}</p>
+              </div>
+
+              <div className="detail-section">
+                <h3>Triệu chứng</h3>
+                <p>{selectedRecord.symptoms || 'Không có ghi chú'}</p>
+              </div>
+
+              <div className="detail-section">
+                <h3>Chẩn đoán</h3>
+                <p>{selectedRecord.diagnosis || 'Không có chẩn đoán'}</p>
+              </div>
+
+              <div className="detail-section">
+                <h3>Phương pháp điều trị</h3>
+                <p>{selectedRecord.treatment || 'Không có phương pháp điều trị'}</p>
+              </div>
+
+              {selectedRecord.prescription && (
+                <div className="detail-section">
+                  <h3>Đơn thuốc / Ghi chú của bác sĩ</h3>
+                  <p>{selectedRecord.prescription}</p>
+                </div>
+              )}
+
+              {selectedRecord.notes && (
+                <div className="detail-section">
+                  <h3>Ghi chú khác</h3>
+                  <p>{selectedRecord.notes}</p>
+                </div>
+              )}
+
+              {selectedRecord.followUpDate && (
+                <div className="detail-section">
+                  <h3>Lịch tái khám</h3>
+                  <p>{formatDate(selectedRecord.followUpDate)}</p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

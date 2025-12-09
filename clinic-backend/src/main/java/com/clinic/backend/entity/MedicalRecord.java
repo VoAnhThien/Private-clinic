@@ -6,6 +6,8 @@ import java.time.*;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name = "medical_record")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
@@ -16,18 +18,22 @@ public class MedicalRecord {
     private Integer medicalRecordId;
 
     @OneToOne
+    @JsonIgnore
     @JoinColumn(name = "appointment_id", unique = true)
     private Appointment appointment;
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "patient_id", nullable = false)
     private Patient patient;
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "doctor_id", nullable = false)
     private Doctor doctor;
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "room_id")
     private Room room;
 
