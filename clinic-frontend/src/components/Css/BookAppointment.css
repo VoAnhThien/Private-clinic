@@ -23,6 +23,8 @@
   max-height: 90vh;
   overflow: hidden;
   display: flex;
+  align-items: center;
+  justify-content: center;
   flex-direction: column;
 }
 
@@ -118,7 +120,7 @@
 }
 
 /* Content */
-.modal-content {
+.modal-content {  
   padding: 1.5rem;
   overflow-y: auto;
   flex: 1;
@@ -379,6 +381,10 @@
 
 .modal-btn-secondary:hover:not(:disabled) {
   background-color: #f9fafb;
+}
+
+.modal-btn + .modal-btn {
+  margin-left: 600px;
 }
 
 /* Time Slots */

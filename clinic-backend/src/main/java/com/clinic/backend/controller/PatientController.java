@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -57,5 +58,24 @@ public class PatientController {
         return repo.save(patient);
     }
 
-
+    @PutMapping("/{id}")
+    public Patient update(@PathVariable String id, @RequestBody Patient patientData) {
+        System.out.println("🔄 Updating patient ID: " + id);
+        
+        Patient existingPatient = repo.findById(id)
+            .orElseThrow(() -> new RuntimeException("Không tìm thấy bệnh nhân với ID: " + id));
+        
+        existingPatient.setFullname(patientData.getFullname());
+        existingPatient.setPhone(patientData.getPhone());
+        existingPatient.setBirthdate(patientData.getBirthdate());
+        existingPatient.setGender(patientData.getGender());
+        existingPatient.setAddress(patientData.getAddress());
+        //existingPatient.setEmergencyContactName(patientData.getEmergencyContactName());
+        //existingPatient.setEmergencyContactPhone(patientData.getEmergencyContactPhone());
+        
+        Patient updated = repo.save(existingPatient);
+        System.out.println(" Updated patient: " + updated.getFullname());
+        
+        return updated;
+    }
 }

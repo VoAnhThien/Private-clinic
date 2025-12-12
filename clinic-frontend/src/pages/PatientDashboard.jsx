@@ -17,6 +17,15 @@ const PatientDashboard = () => {
   const [error, setError] = useState(null);
   const [showAppointmentForm, setShowAppointmentForm] = useState(false);
 
+  // Edit Appointment
+  const [editingAppointment, setEditingAppointment] = useState(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancellingAppointment, setCancellingAppointment] = useState(null);
+
+  // Detail Modal
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  // Data
   const [patientInfo, setPatientInfo] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [quickStats, setQuickStats] = useState({
@@ -32,7 +41,7 @@ const PatientDashboard = () => {
       const interval = setInterval(() => {
         console.log('🔄 Auto refreshing appointments...');
         fetchData();
-      }, 30000);
+      }, 120000);
 
       return () => clearInterval(interval);
     }
@@ -80,10 +89,58 @@ const PatientDashboard = () => {
       setLoading(false);
     }
   };
-
+  //xác nhận thanh công
   const handleAppointmentSuccess = (appointmentData) => {
     setShowAppointmentForm(false);
+    setEditingAppointment(null);
     fetchData();
+  };
+  //huy lịch
+  const handleCancelClick = (appointment) => {
+    setCancellingAppointment(appointment);
+    setShowCancelModal(true);
+  };
+
+  const confirmCancelAppointment = async () => {
+    if (!cancellingAppointment) return;
+
+    try {
+      await appointmentApi.updateStatus(cancellingAppointment.appointmentId, 'canceled');
+      alert('✅ Đã hủy lịch hẹn thành công!');
+      setShowCancelModal(false);
+      setCancellingAppointment(null);
+      fetchData();
+    } catch (err) {
+      console.error('❌ Error canceling appointment:', err);
+      alert('❌ Không thể hủy lịch hẹn. Vui lòng thử lại!');
+    }
+  };
+  //đổi lịch
+  const handleRescheduleClick = (appointment) => {
+    setEditingAppointment(appointment);
+    setShowAppointmentForm(true);
+  };
+  //xem chi tiết
+  const handleViewDetails = (appointment) => {
+    setSelectedAppointment(appointment);
+    setShowDetailModal(true);
+  };
+  //gửi nhắc nhở
+  const handleSendReminder = async (appointment) => {
+    const confirmSend = window.confirm(
+      `Gửi email nhắc nhở đến ${appointment.patientEmail || patientInfo?.email}?`
+    );
+    
+    if (confirmSend) {
+      try {
+        // TODO: Gọi API gửi email nhắc nhở ở đây
+        alert(' Đã gửi email nhắc nhở thành công!');
+        // Ví dụ: await emailApi.sendReminder(appointment.appointmentId);
+      } catch (err) {
+        console.error(' Error sending reminder:', err);
+        alert(' Không thể gửi email. Vui lòng thử lại!');
+      }
+    }
   };
 
   const formatDate = (dateString) => {
@@ -169,11 +226,132 @@ const PatientDashboard = () => {
 
   return (
     <div className="patient-dashboard">
+      {showCancelModal && cancellingAppointment && (
+        <div className="modal-overlay" onClick={() => setShowCancelModal(false)}>
+          <div className="modal-content-small" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-small">
+              <h3>Xác nhận hủy lịch hẹn</h3>
+            </div>
+            <div className="modal-body">
+              <p>Bạn có chắc chắn muốn hủy lịch hẹn này?</p>
+              <div className="cancel-appointment-info">
+                <p><strong>Bác sĩ:</strong> {cancellingAppointment.doctorName}</p>
+                <p><strong>Thời gian:</strong> {formatDate(cancellingAppointment.appointmentDate)} - {formatTime(cancellingAppointment.appointmentTime)}</p>
+                <p><strong>Lý do:</strong> {cancellingAppointment.reason || 'Khám tổng quát'}</p>
+              </div>
+              <p className="warning-text">Hành động này không thể hoàn tác!</p>
+            </div>
+            <div className="modal-footer-small">
+              <button 
+                className="btn-secondary" 
+                onClick={() => setShowCancelModal(false)}
+              >
+                Đóng
+              </button>
+              <button 
+                className="btn-danger" 
+                onClick={confirmCancelAppointment}
+              >
+                Xác nhận hủy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDetailModal && selectedAppointment && (
+      <div className="modal-overlay" onClick={() => setShowDetailModal(false)}>
+        <div className="modal-content-detail" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header-small">
+            <h3>📄 Chi tiết lịch hẹn</h3>
+            <button className="close-icon-btn" onClick={() => setShowDetailModal(false)}>✕</button>
+          </div>
+          
+          <div className="modal-body">
+            {/* Thông tin bệnh nhân */}
+            <div className="detail-section">
+              <h4>👤 Thông tin bệnh nhân</h4>
+              <div className="detail-grid">
+                <div className="detail-item">
+                  <span className="detail-label">Họ tên:</span>
+                  <span className="detail-value">{patientInfo?.fullname}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Email:</span>
+                  <span className="detail-value">{patientInfo?.email}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Số điện thoại:</span>
+                  <span className="detail-value">{patientInfo?.phone}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Thông tin bác sĩ */}
+            <div className="detail-section">
+              <h4>👨‍⚕️ Thông tin bác sĩ</h4>
+              <div className="detail-grid">
+                <div className="detail-item">
+                  <span className="detail-label">Bác sĩ:</span>
+                  <span className="detail-value">{selectedAppointment.doctorName}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Chuyên khoa:</span>
+                  <span className="detail-value">{selectedAppointment.specialty}</span>
+                </div>
+                {selectedAppointment.roomName && (
+                  <div className="detail-item">
+                    <span className="detail-label">Phòng khám:</span>
+                    <span className="detail-value">{selectedAppointment.roomName}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Thông tin lịch hẹn */}
+            <div className="detail-section">
+              <h4>📅 Thông tin lịch hẹn</h4>
+              <div className="detail-grid">
+                <div className="detail-item">
+                  <span className="detail-label">Ngày khám:</span>
+                  <span className="detail-value">{formatDate(selectedAppointment.appointmentDate)}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Giờ khám:</span>
+                  <span className="detail-value">{formatTime(selectedAppointment.appointmentTime)}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Trạng thái:</span>
+                  <span className="detail-value">{getStatusBadge(selectedAppointment.status)}</span>
+                </div>
+                <div className="detail-item full-width">
+                  <span className="detail-label">Lý do khám:</span>
+                  <span className="detail-value">{selectedAppointment.reason || 'Khám tổng quát'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Ghi chú */}
+            <div className="detail-note">
+              💡 <strong>Lưu ý:</strong> Vui lòng đến trước giờ hẹn 15 phút để làm thủ tục.
+            </div>
+          </div>
+
+          <div className="modal-footer-small">
+            <button className="btn-secondary" onClick={() => setShowDetailModal(false)}>
+              Đóng
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
       {showAppointmentForm && (
         <BookAppointment 
-          onClose={() => setShowAppointmentForm(false)}
+          onClose={() => { setShowAppointmentForm(false); setEditingAppointment(null); }}
           onSuccess={handleAppointmentSuccess}
           patientInfo={patientInfo}
+          editingAppointment={editingAppointment}
         />
       )}
 
@@ -324,14 +502,14 @@ const PatientDashboard = () => {
                         <div className="appointment-actions">
                           {appointment.status === 'pending' && (
                             <>
-                              <button className="btn-cancel">Hủy lịch</button>
-                              <button className="btn-reschedule">Đổi lịch</button>
+                              <button className="btn-cancel" onClick={() => { setCancellingAppointment(appointment); setShowCancelModal(true); }}>Hủy lịch</button>
+                              <button className="btn-reschedule" onClick={() => handleRescheduleClick(appointment)}>Đổi lịch</button>
                             </>
                           )}
                           {appointment.status === 'confirmed' && (
                             <>
-                              <button className="btn-details">Xem chi tiết</button>
-                              <button className="btn-reminder">Nhắc nhở</button>
+                              <button className="btn-details" onClick={() => handleViewDetails(appointment)}>Xem chi tiết</button>
+                              <button className="btn-reminder" onClick={() => handleSetReminder(appointment)}>Nhắc nhở</button>
                             </>
                           )}
                         </div>

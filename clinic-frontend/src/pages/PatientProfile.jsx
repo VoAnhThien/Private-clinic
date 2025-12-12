@@ -16,8 +16,8 @@ const PatientProfile = () => {
     birthdate: '',
     gender: '',
     address: '',
-    emergencyContactName: '',
-    emergencyContactPhone: ''
+    // emergencyContactName: '',
+    // emergencyContactPhone: ''
   });
 
   useEffect(() => {
@@ -35,8 +35,8 @@ const PatientProfile = () => {
         birthdate: data.birthdate || '',
         gender: data.gender || '',
         address: data.address || '',
-        emergencyContactName: data.emergencyContactName || '',
-        emergencyContactPhone: data.emergencyContactPhone || ''
+        //emergencyContactName: data.emergencyContactName || '',
+        //emergencyContactPhone: data.emergencyContactPhone || ''
       });
     } catch (error) {
       console.error('Error fetching patient info:', error);
@@ -58,18 +58,17 @@ const PatientProfile = () => {
       birthdate: patientInfo.birthdate || '',
       gender: patientInfo.gender || '',
       address: patientInfo.address || '',
-      emergencyContactName: patientInfo.emergencyContactName || '',
-      emergencyContactPhone: patientInfo.emergencyContactPhone || ''
+      //emergencyContactName: patientInfo.emergencyContactName || '',
+      //emergencyContactPhone: patientInfo.emergencyContactPhone || ''
     });
   };
 
   const handleSave = async () => {
     try {
-      // TODO: Call API to update patient info
-      // await patientApi.update(patientInfo.patientId, formData);
+      await patientApi.update(patientInfo.patientId, formData);
       alert('Cập nhật thông tin thành công!');
       setEditing(false);
-      fetchPatientInfo();
+      await fetchPatientInfo();
     } catch (error) {
       console.error('Error updating patient info:', error);
       alert('Có lỗi xảy ra. Vui lòng thử lại!');
@@ -113,7 +112,6 @@ const PatientProfile = () => {
           )}
         </div>
 
-        {/* Info Section */}
         <div className="profile-card info-section">
           <h3>Thông tin cơ bản</h3>
           
@@ -186,15 +184,15 @@ const PatientProfile = () => {
                   onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
                 >
                   <option value="">-- Chọn --</option>
-                  <option value="male">Nam</option>
-                  <option value="female">Nữ</option>
-                  <option value="other">Khác</option>
+                  <option value="M">Nam</option>
+                  <option value="F">Nữ</option>
+                  <option value="O">Khác</option>
                 </select>
               ) : (
                 <p>
-                  {patientInfo?.gender === 'male' ? 'Nam' :
-                   patientInfo?.gender === 'female' ? 'Nữ' :
-                   patientInfo?.gender === 'other' ? 'Khác' : 'Chưa cập nhật'}
+                  {patientInfo?.gender === 'M' ? 'Nam' :
+                   patientInfo?.gender === 'F' ? 'Nữ' :
+                   patientInfo?.gender === 'O' ? 'Khác' : 'Chưa cập nhật'}
                 </p>
               )}
             </div>
@@ -217,7 +215,7 @@ const PatientProfile = () => {
           </div>
         </div>
                 
-        {/* Emergency Contact */}
+        {/* Emergency Contact
         <div className="profile-card emergency-section">
           <h3>Liên hệ khẩn cấp</h3>
           
@@ -256,7 +254,7 @@ const PatientProfile = () => {
               )}
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Action Buttons */}
         {editing && (

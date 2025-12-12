@@ -45,7 +45,7 @@ CREATE DATABASE clinic_management
 3. CHẠY FRONTEND (React + Vite)
     cd clinic-frontend
     npm install        # chỉ lần đầu
-    npm install lucide-react
+    npm install lucide-react  # chỉ lần đầu
     npm run dev
 
     Frontend chạy ở: http://localhost:5173

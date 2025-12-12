@@ -39,6 +39,9 @@ public class Patient {
     @Column(name = "email", length = 150)
     private String email;
 
+    // @Column(name = "emergency_contact_name", length = 150)
+    // private String emergencyContactName;
+
     @Column(name = "emergency_contact_phone", length = 30)
     private String emergencyContactPhone;
 
@@ -57,7 +60,6 @@ public class Patient {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt = LocalDateTime.now();
 
-    // Relationships
     @OneToMany(mappedBy = "patient")
     @JsonBackReference
     private Set<Appointment> appointments = new HashSet<>();

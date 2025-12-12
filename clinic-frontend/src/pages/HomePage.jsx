@@ -314,7 +314,7 @@ function Footer() {
         <div className="footer-content">
           {/* Brand Section */}
           <div className="footer-brand">
-            <div className="brand-logo">🏥 Phòng Khám Tư</div>
+            <div className="brand-logo">🏥 Phòng Khám Tư Thiên-Lực</div>
             <p className="brand-description">
               Nền tảng đặt lịch khám bệnh trực tuyến hàng đầu Việt Nam, 
               kết nối bệnh nhân với các bác sĩ giỏi nhất.
@@ -340,7 +340,7 @@ function Footer() {
             </div>
             <div className="contact-item">
               <Mail className="contact-icon" />
-              <span>support@phongkhamtu.vn</span>
+              <span>vothien817@gmail.com</span>
             </div>
           </div>
         </div>
