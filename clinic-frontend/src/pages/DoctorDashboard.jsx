@@ -286,7 +286,7 @@ const DoctorDashboard = () => {
             </div>
           </div>
           <div className="stat-card">
-            <div className="stat-icon bg-purple-100">📊</div>
+            <div className="stat-icon bg-purple-100"></div>
             <div className="stat-content">
               <h3>{stats.weeklyAppointments}</h3>
               <p>Lịch tuần</p>

@@ -38,11 +38,11 @@ public class PatientController {
 
     @GetMapping("/by-email")
     public Patient getByEmail(@RequestParam String email) {
-        System.out.println("🔍 Finding patient by email: " + email);
+        System.out.println(" Finding patient by email: " + email);
         Patient patient = repo.findByEmail(email)
             .orElseThrow(() -> new RuntimeException("Không tìm thấy bệnh nhân với email: " + email));
         
-        System.out.println("✅ Found patient ID: " + patient.getPatientId());
+        System.out.println(" Found patient ID: " + patient.getPatientId());
         return patient;
     }
 
@@ -60,7 +60,7 @@ public class PatientController {
 
     @PutMapping("/{id}")
     public Patient update(@PathVariable String id, @RequestBody Patient patientData) {
-        System.out.println("🔄 Updating patient ID: " + id);
+        System.out.println(" Updating patient ID: " + id);
         
         Patient existingPatient = repo.findById(id)
             .orElseThrow(() -> new RuntimeException("Không tìm thấy bệnh nhân với ID: " + id));

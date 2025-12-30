@@ -16,6 +16,9 @@ public class Account {
     @Column(name = "email", length = 150, unique = true, nullable = false)
     private String email;
 
+    @Column(name = "phone", length = 30, unique = true)
+    private String phone;
+
     @Column(name = "password", length = 255, nullable = false)
     private String password;
 
@@ -30,4 +33,9 @@ public class Account {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt = LocalDateTime.now();
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }

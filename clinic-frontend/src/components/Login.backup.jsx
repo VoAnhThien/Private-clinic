@@ -13,7 +13,7 @@ const Login = ({ onLogin, onSwitchToRegister }) => {
     setError('');
     setLoading(true);
 
-    console.log('📤 Đang đăng nhập với:', formData);
+    console.log(' Đang đăng nhập với:', formData);
 
     try {
       // Gọi API đăng nhập
@@ -26,7 +26,7 @@ const Login = ({ onLogin, onSwitchToRegister }) => {
       });
 
       const data = await response.json();
-      console.log('📥 Response từ server:', data);
+      console.log(' Response từ server:', data);
 
       if (response.ok) {
         // Đăng nhập thành công, lấy thông tin user
@@ -36,7 +36,7 @@ const Login = ({ onLogin, onSwitchToRegister }) => {
         
         if (userResponse.ok) {
           const userInfo = await userResponse.json();
-          console.log('👤 Thông tin user:', userInfo);
+          console.log(' Thông tin user:', userInfo);
 
           const userData = {
             id: userInfo.accountId,
@@ -55,7 +55,7 @@ const Login = ({ onLogin, onSwitchToRegister }) => {
         setError(data.message || 'Đăng nhập thất bại');
       }
     } catch (err) {
-      console.error('❌ Lỗi kết nối:', err);
+      console.error(' Lỗi kết nối:', err);
       setError('Không thể kết nối đến server. Vui lòng kiểm tra backend đã chạy chưa.');
     } finally {
       setLoading(false);
@@ -122,8 +122,8 @@ const Login = ({ onLogin, onSwitchToRegister }) => {
 
       <div className="mt-6 p-4 bg-gray-100 rounded">
         <p className="text-sm text-gray-600 font-semibold mb-2">Tài khoản demo:</p>
-        <p className="text-sm">📧 nam@gmail.com / 🔑 123456 (Bác sĩ)</p>
-        <p className="text-sm">📧 lan@gmail.com / 🔑 123456 (Bác sĩ)</p>
+        <p className="text-sm"> nam@gmail.com /  123456 (Bác sĩ)</p>
+        <p className="text-sm"> lan@gmail.com /  123456 (Bác sĩ)</p>
         <p className="text-sm mt-2 text-gray-500">
           Hoặc đăng ký tài khoản mới ở trên ↑
         </p>

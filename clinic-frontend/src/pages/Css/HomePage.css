@@ -1,4 +1,14 @@
 /* Reset và Base Styles */
+:root {
+  --color-primary: #2563eb;   /* xanh dương tin cậy */
+  --color-secondary: #22c55e; /* xanh lá sức khỏe */
+  --color-accent: #f59e0b;    /* cam nhạt thân thiện */
+  --color-background: #f8fafc;/* nền sạch sẽ */
+  --color-text: #1f2937;      /* chữ chính */
+  --color-muted: #6b7280;     /* chữ phụ */
+  --color-alert: #ef4444;     /* cảnh báo */
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -68,21 +78,21 @@
 }
 
 .btn-primary {
-  background: #2563eb;
+  background: var(--color-primary);
   color: white;
   box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.3);
 }
 
 .btn-primary:hover {
-  background: #1d4ed8;
+  background: var(--color-primary);
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
 }
 
 .btn-secondary {
   background: white;
-  color: #2563eb;
-  border: 2px solid #2563eb;
+  color: var(--color-primary);
+  border: 2px solid var(--color-primary);
 }
 
 .btn-secondary:hover {
@@ -356,12 +366,12 @@
   font-weight: 800;
   line-height: 1.1;
   margin-bottom: 24px;
-  color: #2563eb;
+  color: var(--color-primary);
 }
 
 .highlight {
-  color: #fbbf24;
-  display: block;
+  color: var(--color-accent);
+  display: block; 
 }
 
 .hero-description {
@@ -608,7 +618,7 @@
 /* CTA Section */
 .cta-section {
   padding: 100px 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #2563eb;
   color: white;
   text-align: center;
 }

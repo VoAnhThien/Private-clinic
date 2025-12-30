@@ -447,3 +447,247 @@
     width: 100%;
   }
 }
+
+/* ===== PRESCRIPTION SECTION STYLES - COMPACT VERSION ===== */
+
+.prescription-section {
+  margin-top: 20px;
+  padding: 16px;
+  background: #f0f9ff;
+  border-radius: 8px;
+  border: 1px solid #bae6fd;
+}
+
+.prescription-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.prescription-header .form-label {
+  margin-bottom: 0;
+  font-size: 16px;
+  color: #0c4a6e;
+}
+
+.btn-add-medicine {
+  padding: 8px 16px;
+  background: #0ea5e9;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-add-medicine:hover {
+  background: #0284c7;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
+}
+
+.loading-text {
+  text-align: center;
+  color: #64748b;
+  padding: 24px;
+  font-style: italic;
+}
+
+/* Medicine List */
+.medicine-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.medicine-item {
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  border: 2px solid #e0f2fe;
+  transition: all 0.2s;
+}
+
+.medicine-item:hover {
+  border-color: #0ea5e9;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.15);
+}
+
+.medicine-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e0f2fe;
+}
+
+.medicine-number {
+  font-weight: 600;
+  color: #0c4a6e;
+  font-size: 14px;
+}
+
+.btn-remove-medicine {
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-remove-medicine:hover {
+  background: #dc2626;
+  transform: rotate(90deg) scale(1.1);
+}
+
+/* Medicine Form Grid - COMPACT */
+.medicine-form-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 12px;
+}
+
+.medicine-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.medicine-field.full-width {
+  grid-column: 1 / -1;
+}
+
+.medicine-field label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #475569;
+  margin-bottom: 6px;
+}
+
+.medicine-select,
+.medicine-input,
+.medicine-textarea {
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 13px;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.medicine-select:focus,
+.medicine-input:focus,
+.medicine-textarea:focus {
+  outline: none;
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+.medicine-select {
+  cursor: pointer;
+  background: white;
+}
+
+.medicine-input[type="number"] {
+  width: 100%;
+}
+
+.medicine-textarea {
+  resize: vertical;
+  font-family: inherit;
+  min-height: 60px;
+}
+
+/* Medicine Info Display */
+.medicine-info-display {
+  background: linear-gradient(135deg, #ecfeff 0%, #cffafe 100%);
+  padding: 12px;
+  border-radius: 6px;
+  margin-top: 8px;
+  border-left: 3px solid #06b6d4;
+}
+
+.medicine-info-display .info-row {
+  font-size: 13px;
+  color: #0e7490;
+  margin-bottom: 6px;
+  line-height: 1.5;
+}
+
+.medicine-info-display .info-row:last-child {
+  margin-bottom: 0;
+}
+
+.medicine-info-display .info-row strong {
+  color: #155e75;
+  margin-right: 6px;
+}
+
+.medicine-info-display .usage-note {
+  color: #92400e;
+  background: #fef3c7;
+  padding: 8px;
+  border-radius: 4px;
+  margin-top: 8px;
+  border-left: 3px solid #f59e0b;
+}
+
+/* Animation */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.medicine-item {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .medicine-form-grid {
+    grid-template-columns: 1fr;
+  }
+    
+  .prescription-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .btn-add-medicine {
+    width: 100%;
+  }
+}
+
+/* Compact Mode - Giảm khoảng cách */
+@media (min-width: 769px) {
+  .medicine-form-grid {
+    gap: 10px;
+  }
+  
+  .medicine-item {
+    padding: 12px;
+  }
+  
+  .prescription-section {
+    padding: 14px;
+  }
+}

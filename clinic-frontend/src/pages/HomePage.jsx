@@ -60,14 +60,14 @@ export default function HomePage() {
   ];
 
   const stats = [
-    { number: "100+", label: "Bệnh nhân" },
-    { number: "10+", label: "Bác sĩ" },
-    { number: "10+", label: "Chuyên khoa" },
+    { number: "10+", label: "Bệnh nhân" },
+    { number: "1+", label: "Bác sĩ" },
+    { number: "1+", label: "Chuyên khoa" },
     { number: "90%", label: "Hài lòng" }
   ];
 
   const handleAppointmentSuccess = (appointmentData) => {
-    console.log('✅ Đặt lịch thành công:', appointmentData);
+    console.log(' Đặt lịch thành công:', appointmentData);
   };
 
   return (

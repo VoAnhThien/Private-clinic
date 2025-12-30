@@ -34,7 +34,7 @@ const Register = ({ onSwitchToLogin }) => {
       });
 
       const data = await response.json();
-      console.log('📥 Response từ server:', data);
+      console.log(' Response từ server:', data);
 
       if (response.ok) {
         alert('Đăng ký thành công! Vui lòng đăng nhập.');
@@ -43,7 +43,7 @@ const Register = ({ onSwitchToLogin }) => {
         setError(data.message || 'Đăng ký thất bại');
       }
     } catch (err) {
-      console.error('❌ Lỗi kết nối:', err);
+      console.error(' Lỗi kết nối:', err);
       setError('Không thể kết nối đến server. Vui lòng kiểm tra backend đã chạy chưa.');
     } finally {
       setLoading(false);

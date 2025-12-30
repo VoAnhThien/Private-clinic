@@ -27,4 +27,7 @@ public class Prescription {
 
     @OneToMany(mappedBy = "prescription")
     private Set<PrescriptionDetail> details = new HashSet<>();
+
+    @Column(name = "status", length = 30)
+    private String status = "approved";
 }

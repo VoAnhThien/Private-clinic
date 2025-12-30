@@ -137,14 +137,14 @@ export default function BookAppointment({ onClose, onSuccess, patientInfo = null
       const data = await response.json();
 
       if (response.ok) {
-        alert('✅ Đặt lịch thành công!');
+        alert(' Đặt lịch thành công!');
         onSuccess && onSuccess(data);
         onClose();
       } else {
         setError(data.message || 'Đặt lịch thất bại');
       }
     } catch (err) {
-      console.error('❌ Lỗi:', err);
+      console.error(' Lỗi:', err);
       setError('Không thể kết nối đến server');
     } finally {
       setLoading(false);
@@ -182,7 +182,7 @@ export default function BookAppointment({ onClose, onSuccess, patientInfo = null
 
         {/* Content */}
         <div className="modal-content">
-          {error && <div className="modal-error">⚠️ {error}</div>}
+          {error && <div className="modal-error"> {error}</div>}
 
           {patientInfo && step === 1 && (
             <div className="info-box">
@@ -348,7 +348,7 @@ export default function BookAppointment({ onClose, onSuccess, patientInfo = null
           {step === 2 && (
             <div>
               <div className="info-box">
-                <p>💡 Chọn các dịch vụ bạn muốn thực hiện cùng với khám bệnh (có thể bỏ qua)</p>
+                <p> Chọn các dịch vụ bạn muốn thực hiện cùng với khám bệnh (có thể bỏ qua)</p>
               </div>
 
               <div className="form-grid">
@@ -400,7 +400,7 @@ export default function BookAppointment({ onClose, onSuccess, patientInfo = null
               </div>
 
               <div className="summary-section">
-                <h3 className="summary-title">👨‍⚕️ Bác sĩ khám</h3>
+                <h3 className="summary-title"> Bác sĩ khám</h3>
                 <div className="summary-doctor">
                   <div>
                     <p className="doctor-name">{selectedDoctor?.fullname}</p>
@@ -412,7 +412,7 @@ export default function BookAppointment({ onClose, onSuccess, patientInfo = null
 
               {selectedServices.length > 0 && (
                 <div className="summary-section">
-                  <h3 className="summary-title">🏥 Dịch vụ ({selectedServices.length})</h3>
+                  <h3 className="summary-title"> Dịch vụ ({selectedServices.length})</h3>
                   {selectedServices.map(sId => {
                     const service = services.find(s => s.serviceId === sId);
                     return (
@@ -427,7 +427,7 @@ export default function BookAppointment({ onClose, onSuccess, patientInfo = null
 
               <div className="total-section">
                 <div className="total-row">
-                  <span>💰 Tổng cộng</span>
+                  <span> Tổng cộng</span>
                   <span>{totalAmount.toLocaleString('vi-VN')}đ</span>
                 </div>
                 <p className="total-breakdown">

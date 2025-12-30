@@ -41,7 +41,8 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final AdminRepository adminRepo;
     private final ServiceRepository serviceRepo;
 
-     // Lấy tất cả appointments
+    private static final int MAX_APPOINTMENTS_PER_DOCTOR_PER_DAY = 100;
+
     @Override
     public List<AppointmentResponse> getAllAppointments() {
         return appointmentRepo.findAll().stream()
@@ -49,34 +50,45 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .collect(Collectors.toList());
     }
 
-    //- Cập nhật trạng thái
     public AppointmentResponse updateAppointmentStatus(Integer appointmentId, String status) {
         Appointment appointment = appointmentRepo.findById(appointmentId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy lịch hẹn: " + appointmentId));
         
-        // Validate status
         List<String> validStatuses = Arrays.asList("pending", "confirmed", "in-progress", "completed", "canceled");
         if (!validStatuses.contains(status)) {
             throw new RuntimeException("Trạng thái không hợp lệ: " + status);
         }
         
         appointment.setStatus(status);
-        appointment.setUpdatedAt(LocalDateTime.now()); // Cập nhật thời gian
-        Appointment savedAppointment = appointmentRepo.save(appointment); // LƯU VÀO DATABASE
+        appointment.setUpdatedAt(LocalDateTime.now());
+        Appointment savedAppointment = appointmentRepo.save(appointment);
         
         return toResponse(savedAppointment);
     }
 
     @Override
     public AppointmentResponse bookAppointment(AppointmentRequest request) {
-        // 1. Tìm hoặc tạo bệnh nhân
         Patient patient = findOrCreatePatient(request);
 
-        // 2. Kiểm tra bác sĩ
         Doctor doctor = doctorRepo.findById(request.getDoctorId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy bác sĩ ID: " + request.getDoctorId()));
 
-        // 3. Kiểm tra trùng lịch bác sĩ
+        // ===== CHECK 100 APPOINTMENTS =====
+        long appointmentCount = appointmentRepo.countByDoctorAndAppointmentDateAndStatusNot(
+            doctor, 
+            request.getAppointmentDate(),
+            "canceled"
+        );
+
+        if (appointmentCount >= MAX_APPOINTMENTS_PER_DOCTOR_PER_DAY) {
+            throw new RuntimeException(
+                "Bác sĩ " + doctor.getFullname() + 
+                " đã đạt giới hạn " + MAX_APPOINTMENTS_PER_DOCTOR_PER_DAY + 
+                " lịch hẹn trong ngày " + request.getAppointmentDate() + 
+                ". Vui lòng chọn ngày khác hoặc bác sĩ khác."
+            );
+        }
+
         boolean doctorBusy = appointmentRepo.findByDoctor_DoctorIdAndAppointmentDateAndAppointmentTime(
                 request.getDoctorId(),
                 request.getAppointmentDate(),
@@ -87,7 +99,6 @@ public class AppointmentServiceImpl implements AppointmentService {
             throw new RuntimeException("Bác sĩ đã có lịch vào giờ này!");
         }
 
-        // 4. Tự động chọn phòng trống (nếu không chỉ định)
         Integer roomId = request.getRoomId();
         if (roomId == null) {
             roomId = roomRepo.findByStatus("available").stream()
@@ -101,7 +112,6 @@ public class AppointmentServiceImpl implements AppointmentService {
             }
         }
 
-        // 5. Load các dịch vụ đã chọn
         Set<com.clinic.backend.entity.Service> requestedServices = new HashSet<>();
         if (request.getServiceIds() != null && !request.getServiceIds().isEmpty()) {
             for (Integer serviceId : request.getServiceIds()) {
@@ -111,7 +121,6 @@ public class AppointmentServiceImpl implements AppointmentService {
             }
         }
 
-        // 6. Tạo lịch hẹn
         Appointment appointment = Appointment.builder()
                 .patient(patient)
                 .doctor(doctor)
@@ -132,21 +141,17 @@ public class AppointmentServiceImpl implements AppointmentService {
         return toResponse(appointment);
     }
 
-    // THÊM METHOD MỚI: Tìm hoặc tạo patient
     private Patient findOrCreatePatient(AppointmentRequest request) {
-        // Nếu có patientId → tìm trong DB
         if (request.getPatientId() != null && !request.getPatientId().isEmpty()) {
             return patientRepo.findById(request.getPatientId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy bệnh nhân: " + request.getPatientId()));
         }
         
-        // Tìm theo email
         Patient existingPatient = patientRepo.findByEmail(request.getEmail()).orElse(null);
         if (existingPatient != null) {
             return existingPatient;
         }
         
-        // Tạo mới Patient (không có account)
         Patient newPatient = new Patient();
         newPatient.setPatientId("P" + System.currentTimeMillis());
         newPatient.setFullname(request.getFullname());
@@ -182,19 +187,38 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .collect(Collectors.toList());
     }
 
-    //- THÊM THÔNG TIN SERVICE
+    public boolean isDoctorAvailable(Integer doctorId, LocalDate date) {
+        Doctor doctor = doctorRepo.findById(doctorId)
+            .orElseThrow(() -> new RuntimeException("Doctor not found"));
+        
+        long count = appointmentRepo.countByDoctorAndAppointmentDateAndStatusNot(
+            doctor, date, "canceled"
+        );
+        
+        return count < MAX_APPOINTMENTS_PER_DOCTOR_PER_DAY;
+    }
+
+    public int getAvailableSlots(Integer doctorId, LocalDate date) {
+        Doctor doctor = doctorRepo.findById(doctorId)
+            .orElseThrow(() -> new RuntimeException("Doctor not found"));
+        
+        long count = appointmentRepo.countByDoctorAndAppointmentDateAndStatusNot(
+            doctor, date, "canceled"
+        );
+        
+        return (int) Math.max(0, MAX_APPOINTMENTS_PER_DOCTOR_PER_DAY - count);
+    }
+
+    // ===== MAIN MAPPING METHOD 
     private AppointmentResponse toResponse(Appointment a) {
-        // Tính phí bác sĩ
         BigDecimal doctorFee = a.getDoctor().getConsultationFee() != null 
             ? a.getDoctor().getConsultationFee() 
             : BigDecimal.ZERO;
         
-        // Tính tổng phí dịch vụ
         BigDecimal serviceFee = a.getRequestedServices().stream()
             .map(com.clinic.backend.entity.Service::getUnitPrice)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
         
-        // Map dịch vụ sang DTO
         List<AppointmentResponse.ServiceDTO> serviceDTOs = a.getRequestedServices().stream()
             .map(s -> new AppointmentResponse.ServiceDTO(
                 s.getServiceId(),
@@ -210,19 +234,24 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .patientName(a.getContactFullname() != null ? a.getContactFullname() : a.getPatient().getFullname())
                 .patientEmail(a.getContactEmail() != null ? a.getContactEmail() : a.getPatient().getEmail())
                 .patientPhone(a.getContactPhone() != null ? a.getContactPhone() : a.getPatient().getPhone())
+                .patientBirthdate(a.getPatient().getBirthdate())  
+                .doctorId(a.getDoctor().getDoctorId())          
                 .doctorName(a.getDoctor().getFullname())
                 .specialty(a.getDoctor().getSpecialty().getName())
                 .doctorFee(doctorFee)
+                .roomId(a.getRoom() != null ? a.getRoom().getRoomId() : null)  
                 .roomName(a.getRoom() != null ? a.getRoom().getRoomName() : "Chưa xác định")
                 .appointmentDate(a.getAppointmentDate())
                 .appointmentTime(a.getAppointmentTime())
                 .reason(a.getReason())
                 .status(a.getStatus())
+                .notes(a.getNotes())                              
                 .createdBy(a.getCreatedByAdmin() != null ? a.getCreatedByAdmin().getFullname() : "Bệnh nhân tự đặt")
+                .createdAt(a.getCreatedAt())                      
+                .updatedAt(a.getUpdatedAt())                     
                 .requestedServices(serviceDTOs)
                 .totalServiceFee(serviceFee)
                 .totalAmount(doctorFee.add(serviceFee))
                 .build();
     }
-
 }

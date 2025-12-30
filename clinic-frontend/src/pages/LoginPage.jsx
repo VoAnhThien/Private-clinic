@@ -47,7 +47,7 @@ export default function LoginPage() {
     }
   } catch (err) {
     console.error('Login error:', err);
-    setError('Email hoặc mật khẩu không chính xác. Vui lòng thử lại.');
+    setError('Email/SDT hoặc mật khẩu không chính xác. Vui lòng thử lại.');
   } finally {
     setIsLoading(false);
   }
@@ -56,8 +56,8 @@ export default function LoginPage() {
   const handleDemoLogin = (role) => {
     const demoAccounts = {
       patient: { email: 'patient@demo.com', password: '123456' },
-      doctor: { email: 'doctor@demo.com', password: '123456' },
-      admin: { email: 'admin@demo.com', password: '123456' }
+      doctor: { email: 'voanhthien@gmail.com', password: '123456' },
+      admin: { email: 'admin@gmail.com', password: '123456' }
     };
 
     setFormData(demoAccounts[role]);
@@ -131,16 +131,15 @@ export default function LoginPage() {
 
               <div className="form-group">
                 <label htmlFor="email" className="form-label">
-                  <Mail className="input-icon" />
-                  Địa chỉ email
+                  Email hoặc Số điện thoại
                 </label>
                 <input
                   id="email"
                   name="email"
-                  type="email"
+                  type="text"  
                   value={formData.email}
                   onChange={handleChange}
-                  placeholder="Nhập địa chỉ email của bạn"
+                  placeholder="Nhập email hoặc số điện thoại" 
                   className="form-input"
                   required
                 />
@@ -221,15 +220,15 @@ export default function LoginPage() {
             <div className="banner-features">
               <div className="feature-item">
                 <div className="feature-icon">👨‍⚕️</div>
-                <span>500+ Bác sĩ giỏi</span>
+                <span>Bác sĩ tận tâm</span>
               </div>
               <div className="feature-item">
                 <div className="feature-icon">🩺</div>
-                <span>50+ Chuyên khoa</span>
+                <span>Chuyên khoa đa dạng</span>
               </div>
               <div className="feature-item">
                 <div className="feature-icon">💻</div>
-                <span>Đặt lịch online</span>
+                <span>Đặt lịch dễ dàng</span>
               </div>
             </div>
           </div>

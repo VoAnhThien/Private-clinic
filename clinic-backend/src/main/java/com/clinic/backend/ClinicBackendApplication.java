@@ -51,14 +51,14 @@ public class ClinicBackendApplication {
         Room r2 = roomRepo.save(new Room(null, "Phòng 102", "consultation", 1, "available", null));
 
         // 3. Bác sĩ
-        Account acc1 = accountRepo.save(new Account(null, "nam@gmail.com", "123456", "doctor", "active", null, null));
-        Account acc2 = accountRepo.save(new Account(null, "lan@gmail.com", "123456", "doctor", "active", null, null));
+        // Account acc1 = accountRepo.save(new Account(null, "nam@gmail.com", "123456", "doctor", "active", null, null));
+        // Account acc2 = accountRepo.save(new Account(null, "lan@gmail.com", "123456", "doctor", "active", null, null));
 
-        doctorRepo.save(new Doctor(null, acc1, "BS. Nguyễn Văn Nam", s1, r1, "0912345678", "Nội tổng quát", 10, new BigDecimal("200000"), "active", null));
-        doctorRepo.save(new Doctor(null, acc2, "BS. Trần Thị Lan", s2, r2, "0912345679", "Tim mạch", 8, new BigDecimal("250000"), "active", null));
+        // doctorRepo.save(new Doctor(null, acc1, "BS. Nguyễn Văn Nam", s1, r1, "0912345678", "Nội tổng quát", 10, new BigDecimal("200000"), "active", null));
+        // doctorRepo.save(new Doctor(null, acc2, "BS. Trần Thị Lan", s2, r2, "0912345679", "Tim mạch", 8, new BigDecimal("250000"), "active", null));
 
-        System.out.println("=== INSERT DỮ LIỆU MẪU THÀNH CÔNG ===");
-        System.out.println("→ Đăng nhập thử: test@gmail.com / 123456");
+        // System.out.println("=== INSERT DỮ LIỆU MẪU THÀNH CÔNG ===");
+        // System.out.println("→ Đăng nhập thử: test@gmail.com / 123456");
     };
 	}	
 }

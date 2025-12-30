@@ -42,7 +42,7 @@ const AdminDashboard = () => {
           const activitiesData = await activitiesRes.json();
           setRecentActivities(Array.isArray(activitiesData) ? activitiesData : []);
         } else {
-          console.warn('⚠️ Không load được activities');
+          console.warn(' Không load được activities');
           setRecentActivities([]);
         }
       } catch (err) {
@@ -57,17 +57,17 @@ const AdminDashboard = () => {
           const usersData = await usersRes.json();
           setUsers(Array.isArray(usersData) ? usersData : []);
         } else {
-          console.warn('⚠️ Không load được users');
+          console.warn(' Không load được users');
           setUsers([]);
         }
       } catch (err) {
-        console.error('❌ Lỗi users:', err);
+        console.error(' Lỗi users:', err);
         setUsers([]);
       }
 
-      console.log('✅ Đã tải data');
+      console.log(' Đã tải data');
     } catch (error) {
-      console.error('❌ Lỗi tải data:', error);
+      console.error(' Lỗi tải data:', error);
       setRecentActivities([]);
       setUsers([]);
     } finally {

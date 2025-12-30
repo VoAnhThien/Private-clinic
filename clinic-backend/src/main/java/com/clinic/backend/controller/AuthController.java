@@ -27,53 +27,60 @@ public class AuthController {
     @Autowired private PatientRepository patientRepo;
 
     @PostMapping("/register")
-    @Transactional // Đảm bảo cả 2 thao tác insert thành công hoặc rollback
+    @Transactional
     public ResponseEntity<?> register(@RequestBody Map<String, String> body) {
         System.out.println("=== BẮT ĐẦU ĐĂNG KÝ ===");
-        System.out.println("📦 Request body: " + body);
+        System.out.println(" Request body: " + body);
         
         String email = body.get("email");
         String password = body.get("password");
         String fullname = body.get("fullname");
         String phone = body.get("phone");
 
-        System.out.println("📧 Email: " + email);
-        System.out.println("🔑 Password: " + password);
-        System.out.println("👤 Fullname: " + fullname);
-        System.out.println("📱 Phone: " + phone);
+        System.out.println(" Email: " + email);
+        System.out.println(" Password: " + password);
+        System.out.println(" Fullname: " + fullname);
+        System.out.println(" Phone: " + phone);
 
         // Validate input
         if (email == null || email.trim().isEmpty()) {
-            System.out.println("❌ Email rỗng");
+            System.out.println(" Email rỗng");
             return ResponseEntity.badRequest().body(Map.of("message", "Email không được để trống"));
         }
         if (password == null || password.trim().isEmpty()) {
-            System.out.println("❌ Password rỗng");
+            System.out.println(" Password rỗng");
             return ResponseEntity.badRequest().body(Map.of("message", "Mật khẩu không được để trống"));
         }
 
-        System.out.println("📧 Đang kiểm tra email: " + email);
+        System.out.println("🔍 Đang kiểm tra email: " + email);
         
-        // Kiểm tra email tồn tại - Query trực tiếp
         try {
-            Account existingAccount = accountRepo.findByEmail(email).orElse(null);
-            
-            if (existingAccount != null) {
-                System.out.println("❌ Email đã tồn tại với ID: " + existingAccount.getAccountId());
+            // Kiểm tra email tồn tại
+            if (accountRepo.existsByEmail(email.trim().toLowerCase())) {
+                System.out.println(" Email đã tồn tại");
                 return ResponseEntity.badRequest().body(Map.of("message", "Email đã tồn tại"));
             }
 
-            System.out.println("✅ Email hợp lệ, đang tạo tài khoản...");
+            // ===== KIỂM TRA PHONE TỒN TẠI =====
+            if (phone != null && !phone.trim().isEmpty()) {
+                if (accountRepo.existsByPhone(phone.trim())) {
+                    System.out.println(" Số điện thoại đã tồn tại");
+                    return ResponseEntity.badRequest().body(Map.of("message", "Số điện thoại đã được sử dụng"));
+                }
+            }
+
+            System.out.println(" Email hợp lệ, đang tạo tài khoản...");
             
             // Tạo Account
             Account acc = new Account();
-            acc.setEmail(email.trim().toLowerCase()); // Chuẩn hóa email
+            acc.setEmail(email.trim().toLowerCase());
+            acc.setPhone(phone != null ? phone.trim() : null);  // ===== LƯU PHONE =====
             acc.setPassword(password);
             acc.setAccountType("patient");
             acc.setStatus("active");
             acc = accountRepo.save(acc);
             
-            System.out.println("✅ Đã tạo Account ID: " + acc.getAccountId());
+            System.out.println(" Đã tạo Account ID: " + acc.getAccountId());
 
             // Tạo Patient
             Patient p = new Patient();
@@ -84,7 +91,7 @@ public class AuthController {
             p.setAccount(acc);
             patientRepo.save(p);
             
-            System.out.println("✅ Đã tạo Patient: " + p.getPatientId());
+            System.out.println(" Đã tạo Patient: " + p.getPatientId());
             System.out.println("=== ĐĂNG KÝ THÀNH CÔNG ===");
 
             return ResponseEntity.ok(Map.of(
@@ -94,12 +101,12 @@ public class AuthController {
             ));
             
         } catch (org.springframework.dao.DataIntegrityViolationException e) {
-            System.out.println("❌ Lỗi unique constraint: " + e.getMessage());
+            System.out.println(" Lỗi unique constraint: " + e.getMessage());
             return ResponseEntity.badRequest().body(Map.of(
-                "message", "Email đã tồn tại hoặc dữ liệu trùng lặp. Vui lòng kiểm tra lại!"
+                "message", "Email hoặc số điện thoại đã tồn tại. Vui lòng kiểm tra lại!"
             ));
         } catch (Exception e) {
-            System.out.println("❌ Lỗi không xác định: " + e.getMessage());
+            System.out.println(" Lỗi không xác định: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.internalServerError().body(Map.of(
                 "message", "Lỗi server: " + e.getMessage()
@@ -107,27 +114,33 @@ public class AuthController {
         }
     }
 
+    // ===== LOGIN HỖ TRỢ EMAIL/PHONE =====
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
-        String email = body.get("email");
+        String identifier = body.get("email");  // Có thể là email hoặc phone
         String password = body.get("password");
 
-        if (email == null || password == null) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Email và mật khẩu không được để trống"));
+        System.out.println(" Đang đăng nhập với: " + identifier);
+
+        if (identifier == null || password == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email/SĐT và mật khẩu không được để trống"));
         }
 
-        Account acc = accountRepo.findByEmail(email.trim().toLowerCase()).orElse(null);
+        // ===== TÌM ACCOUNT THEO EMAIL HOẶC PHONE =====
+        Account acc = accountRepo.findByEmailOrPhone(identifier.trim()).orElse(null);
 
         if (acc != null && acc.getPassword().equals(password)) {
-            System.out.println("✅ Đăng nhập thành công: " + email);
+            System.out.println(" Đăng nhập thành công: " + identifier);
             return ResponseEntity.ok(Map.of(
                 "token", "dang-nhap-thanh-cong-day-nhe",
-                "accountType", acc.getAccountType()
+                "accountType", acc.getAccountType(),
+                "accountId", acc.getAccountId(),
+                "email", acc.getEmail()
             ));
         }
         
-        System.out.println("❌ Sai email hoặc mật khẩu: " + email);
-        return ResponseEntity.badRequest().body(Map.of("message", "Sai email hoặc mật khẩu"));
+        System.out.println(" Sai email/SĐT hoặc mật khẩu: " + identifier);
+        return ResponseEntity.badRequest().body(Map.of("message", "Sai email/SĐT hoặc mật khẩu"));
     }
 
     @GetMapping("/me")
@@ -141,6 +154,7 @@ public class AuthController {
         Map<String, Object> userInfo = Map.of(
             "accountId", acc.getAccountId(),
             "email", acc.getEmail(),
+            "phone", acc.getPhone() != null ? acc.getPhone() : "",
             "accountType", acc.getAccountType()
         );
 

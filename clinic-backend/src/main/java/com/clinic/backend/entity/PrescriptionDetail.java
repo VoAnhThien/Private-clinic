@@ -16,29 +16,34 @@ public class PrescriptionDetail {
     @JoinColumn(name = "prescription_id", nullable = false)
     private Prescription prescription;
 
-    @Column(name = "medicine_name", length = 200, nullable = false)
+    // ===== ID thuốc từ bảng medicine =====
+    @Column(name = "medicine_id")
+    private String medicineId;
+    
+    // ===== Tên thuốc (cũ - cho backward compatibility) =====
+    @Column(name = "medicine_name", length = 200)
     private String medicineName;
 
     @Column(name = "dosage_strength", length = 100)
-    private String dosageStrength;  // e.g., 500mg
+    private String dosageStrength;
 
     @Column(name = "formulation", length = 50)
-    private String formulation;  // Tablet, vial, bottle
+    private String formulation;
 
     @Column(name = "quantity")
     private Integer quantity = 1;
 
     @Column(name = "unit", length = 30)
-    private String unit;  // Tablet, box, vial
+    private String unit;
 
     @Column(name = "usage_instructions", columnDefinition = "TEXT", nullable = false)
-    private String usageInstructions;  // e.g., 1 tablet morning and night
+    private String usageInstructions;
 
     @Column(name = "dosage_frequency", length = 100)
-    private String dosageFrequency;  // Twice daily
+    private String dosageFrequency;
 
     @Column(name = "timing", length = 100)
-    private String timing;  // After meal, before meal
+    private String timing;
 
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;

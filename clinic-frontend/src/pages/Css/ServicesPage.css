@@ -6,9 +6,9 @@
 
 /* Hero Section */
 .services-hero {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #1e40af;
   color: white;
-  padding: 60px 0 40px;
+  padding: 20px 0 20px;
   text-align: center;
 }
 
@@ -58,7 +58,7 @@
 
 .search-input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #1e40af;
 }
 
 /* Services Section */
@@ -84,8 +84,8 @@
 
 .service-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 20px 25px -5px rgba(102, 126, 234, 0.15);
-  border-color: #667eea;
+  box-shadow: 0 20px 25px -5px rgba(30, 64, 175, 0.15);
+  border-color: #1e40af;
 }
 
 .service-type {
@@ -93,7 +93,7 @@
   top: -10px;
   left: 20px;
   padding: 6px 12px;
-  background: #667eea;
+  background: #1e40af;
   color: white;
   border-radius: 20px;
   font-size: 12px;
@@ -156,7 +156,7 @@
   justify-content: center;
   gap: 8px;
   padding: 12px 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #1e40af;
   color: white;
   border: none;
   border-radius: 10px;
@@ -167,7 +167,7 @@
 
 .book-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 8px 20px rgba(30, 64, 175, 0.3);
 }
 
 .no-results {

@@ -18,20 +18,13 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Khôi phục session khi reload
   useEffect(() => {
     const restoreSession = async () => {
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           const userInfo = JSON.parse(saved);
-          
-          // Verify token còn hợp lệ không
           api.defaults.headers.common['Authorization'] = `Bearer ${userInfo.token}`;
-          
-          // Optional: Gọi API để verify token
-          // await api.get('/auth/verify');
-          
           setUser(userInfo);
         }
       } catch (error) {
@@ -45,16 +38,25 @@ export const AuthProvider = ({ children }) => {
     restoreSession();
   }, []);
 
-  const login = async (email, password) => {
+  const login = async (emailOrPhone, password) => {
     try {
-      // Bước 1: Login
-      const loginRes = await api.post("/auth/login", { email, password });
+      console.log(" Đang đăng nhập với:", emailOrPhone);
+      
+    // Login (có thể là email hoặc phone)
+      const loginRes = await api.post("/auth/login", { 
+        email: emailOrPhone,
+        password 
+      });
+      
       const token = loginRes.data.token;
+      const realEmail = loginRes.data.email; 
+      
+      console.log(" Login response:", loginRes.data);
+      console.log(" Email thật từ backend:", realEmail);
 
-      // Bước 2: Lấy thông tin user
+      // Lấy thông tin user (DÙNG EMAIL THẬT)
       const meRes = await api.get("/auth/me", { 
-         params:{
-         email },
+        params: { email: realEmail },
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -65,9 +67,12 @@ export const AuthProvider = ({ children }) => {
         token,
         id: userData.accountId,
         email: userData.email,
+        phone: userData.phone || '',
         role: role,
         fullName: userData.fullname || userData.name,
       };
+
+      console.log(" User info:", userInfo);
 
       // Lưu vào localStorage
       localStorage.setItem(STORAGE_KEY, JSON.stringify(userInfo));
@@ -79,7 +84,8 @@ export const AuthProvider = ({ children }) => {
       setUser(userInfo);
       return userInfo;
     } catch (error) {
-      console.error("Login failed:", error);
+      console.error(" Login failed:", error);
+      console.error("Error response:", error.response?.data);
       throw error;
     }
   };
@@ -93,17 +99,19 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (email, password, fullname, phone) => {
     try {
-      await api.post("/auth/register", {
+      const registerRes = await api.post("/auth/register", {
         email,
         password,
         fullname,
         phone,
       });
 
+      console.log(" Register response:", registerRes.data);
+
       // Tự động login sau khi đăng ký
       return await login(email, password);
     } catch (error) {
-      console.error("Registration failed:", error);
+      console.error(" Registration failed:", error);
       throw error;
     }
   };
