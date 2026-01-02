@@ -100,7 +100,7 @@ const PatientProfile = () => {
         {/* Avatar Section */}
         <div className="profile-card avatar-section">
           <div className="avatar-large">
-            <User size={64} />
+            <User size={54} />
           </div>
           <h2>{patientInfo?.fullname || 'Bệnh nhân'}</h2>
           <p className="patient-id">ID: {patientInfo?.patientId}</p>

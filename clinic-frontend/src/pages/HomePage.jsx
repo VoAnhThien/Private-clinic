@@ -2,10 +2,11 @@ import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { 
   Search, Calendar, Stethoscope, Users, ChevronRight, Phone, MapPin, 
-  Star, Award, Clock, Shield, Menu, X, Mail, Facebook, Instagram, Twitter 
+  Award, Clock, Shield, Menu, X, Mail, Facebook, Instagram, Twitter 
 } from 'lucide-react';
 import './Css/HomePage.css';
 import BookAppointment from '../components/BookAppointment';
+import doctorImage from '../assets/imgs/two_doctor.png';
 
 export default function HomePage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -144,12 +145,11 @@ export default function HomePage() {
         <div className="hero-content">
           <div className="hero-text">
             <div className="badge">
-              <Star className="badge-icon" />
-              <span>Nền tảng y tế số 1 Việt Nam</span>
+              <span>Nền tảng y tế uy tín</span>
             </div>
             <h1 className="hero-title">
               Chăm sóc sức khỏe 
-              <span className="highlight"> toàn diện</span> 
+              <span className="highlight"> toàn diện </span> 
               cho gia đình bạn
             </h1>
             <p className="hero-description">
@@ -183,21 +183,7 @@ export default function HomePage() {
           
           <div className="hero-image">
             <div className="image-container">
-              <img src="/api/placeholder/600/500" alt="Bác sĩ và bệnh nhân" className="main-image" />
-              <div className="floating-card appointment-card">
-                <Calendar className="card-icon" />
-                <div className="card-content">
-                  <div className="card-title">Đặt lịch thành công</div>
-                  <div className="card-time">09:00 - 15/01</div>
-                </div>
-              </div>
-              <div className="floating-card doctor-card">
-                <Users className="card-icon" />
-                <div className="card-content">
-                  <div className="card-title">BS. Nguyễn Văn A</div>
-                  <div className="card-specialty">Tim mạch</div>
-                </div>
-              </div>
+              <img src={doctorImage} alt="Bác sĩ và bệnh nhân" className="main-image" />
             </div>
           </div>
         </div>

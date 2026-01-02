@@ -21,6 +21,10 @@ export default function BookAppointment({ onClose, onSuccess, patientInfo = null
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  // ===== THÊM MỚI: State cho available slots =====
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
 
   // Khung giờ làm việc cố định
   const TIME_SLOTS = {
@@ -62,6 +66,31 @@ export default function BookAppointment({ onClose, onSuccess, patientInfo = null
     loadServices();
   }, []);
 
+  // ===== THÊM MỚI: Fetch available slots khi chọn bác sĩ + ngày =====
+  useEffect(() => {
+    if (formData.doctorId && formData.appointmentDate) {
+      fetchAvailableSlots();
+    } else {
+      setAvailableSlots([]);
+    }
+  }, [formData.doctorId, formData.appointmentDate]);
+
+  const fetchAvailableSlots = async () => {
+    try {
+      setSlotsLoading(true);
+      const response = await fetch(
+        `http://localhost:8080/api/appointments/available-slots?doctorId=${formData.doctorId}&date=${formData.appointmentDate}`
+      );
+      const data = await response.json();
+      setAvailableSlots(data);
+    } catch (err) {
+      console.error('Lỗi load available slots:', err);
+      setAvailableSlots([]);
+    } finally {
+      setSlotsLoading(false);
+    }
+  };
+
   const loadDoctors = async () => {
     try {
       const res = await fetch('http://localhost:8080/api/doctors');
@@ -94,8 +123,14 @@ export default function BookAppointment({ onClose, onSuccess, patientInfo = null
   const totalAmount = doctorFee + serviceFee;
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
     setError('');
+    
+    // Reset appointmentTime khi đổi bác sĩ hoặc ngày
+    if (name === 'doctorId' || name === 'appointmentDate') {
+      setFormData(prev => ({ ...prev, appointmentTime: '' }));
+    }
   };
 
   const toggleService = (serviceId) => {
@@ -107,8 +142,18 @@ export default function BookAppointment({ onClose, onSuccess, patientInfo = null
   };
 
   const selectTimeSlot = (time) => {
+    // Kiểm tra slot có available không
+    if (!availableSlots.includes(time)) {
+      return; // Không cho chọn nếu đã đặt
+    }
     setFormData({ ...formData, appointmentTime: time });
     setError('');
+  };
+
+  // ===== THÊM MỚI: Kiểm tra slot có available không =====
+  const isSlotAvailable = (time) => {
+    if (!formData.doctorId || !formData.appointmentDate) return true;
+    return availableSlots.includes(time);
   };
 
   const handleSubmit = async () => {
@@ -137,14 +182,20 @@ export default function BookAppointment({ onClose, onSuccess, patientInfo = null
       const data = await response.json();
 
       if (response.ok) {
-        alert(' Đặt lịch thành công!');
+        if (data.status === 'confirmed') {
+          alert('✅ Đặt lịch thành công và đã được xác nhận!\n\nLịch hẹn của bạn đã được tự động duyệt. Vui lòng đến đúng giờ hẹn.');
+        } else if (data.status === 'pending') {
+          alert('⏳ Đặt lịch thành công!\n\nLịch hẹn của bạn đang chờ xác nhận từ phòng khám. Chúng tôi sẽ thông báo cho bạn sớm nhất.');
+        } else {
+          alert('✅ Đặt lịch thành công!');
+        }
         onSuccess && onSuccess(data);
         onClose();
       } else {
         setError(data.message || 'Đặt lịch thất bại');
       }
     } catch (err) {
-      console.error(' Lỗi:', err);
+      console.error('❌ Lỗi:', err);
       setError('Không thể kết nối đến server');
     } finally {
       setLoading(false);
@@ -182,7 +233,7 @@ export default function BookAppointment({ onClose, onSuccess, patientInfo = null
 
         {/* Content */}
         <div className="modal-content">
-          {error && <div className="modal-error"> {error}</div>}
+          {error && <div className="modal-error">❌ {error}</div>}
 
           {patientInfo && step === 1 && (
             <div className="info-box">
@@ -280,53 +331,95 @@ export default function BookAppointment({ onClose, onSuccess, patientInfo = null
                   <Clock size={16} /> Chọn giờ khám *
                 </label>
                 
-                {/* Buổi sáng */}
-                <div style={{ marginBottom: '1rem' }}>
-                  <h4 style={{ 
-                    margin: '0 0 0.5rem 0', 
-                    fontSize: '0.875rem', 
-                    color: '#6b7280',
-                    fontWeight: '600'
-                  }}>
-                    🌅 Buổi sáng (8:00 - 11:30)
-                  </h4>
-                  <div className="time-slots-grid">
-                    {TIME_SLOTS.morning.map(slot => (
-                      <button
-                        key={slot.value}
-                        type="button"
-                        onClick={() => selectTimeSlot(slot.value)}
-                        className={`time-slot-btn ${formData.appointmentTime === slot.value ? 'selected' : ''}`}
-                      >
-                        {slot.label}
-                      </button>
-                    ))}
+                {slotsLoading && (
+                  <div style={{ textAlign: 'center', padding: '1rem', color: '#6b7280' }}>
+                    ⏳ Đang kiểm tra khung giờ trống...
                   </div>
-                </div>
+                )}
+                
+                {!formData.doctorId || !formData.appointmentDate ? (
+                  <div style={{ 
+                    padding: '1rem', 
+                    background: '#fef3c7', 
+                    borderRadius: '8px',
+                    fontSize: '0.9rem',
+                    color: '#92400e'
+                  }}>
+                    ⚠️ Vui lòng chọn bác sĩ và ngày khám trước
+                  </div>
+                ) : (
+                  <>
+                    {/* Buổi sáng */}
+                    <div style={{ marginBottom: '1rem' }}>
+                      <h4 style={{ 
+                        margin: '0 0 0.5rem 0', 
+                        fontSize: '0.875rem', 
+                        color: '#6b7280',
+                        fontWeight: '600'
+                      }}>
+                        🌅 Buổi sáng (8:00 - 11:30)
+                      </h4>
+                      <div className="time-slots-grid">
+                        {TIME_SLOTS.morning.map(slot => {
+                          const available = isSlotAvailable(slot.value);
+                          return (
+                            <button
+                              key={slot.value}
+                              type="button"
+                              onClick={() => selectTimeSlot(slot.value)}
+                              disabled={!available}
+                              className={`time-slot-btn ${
+                                formData.appointmentTime === slot.value 
+                                  ? 'selected' 
+                                  : !available 
+                                  ? 'disabled' 
+                                  : ''
+                              }`}
+                            >
+                              {slot.label}
+                              {!available && <span className="slot-booked">✕</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
 
-                {/* Buổi chiều */}
-                <div>
-                  <h4 style={{ 
-                    margin: '0 0 0.5rem 0', 
-                    fontSize: '0.875rem', 
-                    color: '#6b7280',
-                    fontWeight: '600'
-                  }}>
-                    🌤️ Buổi chiều (13:00 - 17:00)
-                  </h4>
-                  <div className="time-slots-grid">
-                    {TIME_SLOTS.afternoon.map(slot => (
-                      <button
-                        key={slot.value}
-                        type="button"
-                        onClick={() => selectTimeSlot(slot.value)}
-                        className={`time-slot-btn ${formData.appointmentTime === slot.value ? 'selected' : ''}`}
-                      >
-                        {slot.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                    {/* Buổi chiều */}
+                    <div>
+                      <h4 style={{ 
+                        margin: '0 0 0.5rem 0', 
+                        fontSize: '0.875rem', 
+                        color: '#6b7280',
+                        fontWeight: '600'
+                      }}>
+                        🌤️ Buổi chiều (13:00 - 17:00)
+                      </h4>
+                      <div className="time-slots-grid">
+                        {TIME_SLOTS.afternoon.map(slot => {
+                          const available = isSlotAvailable(slot.value);
+                          return (
+                            <button
+                              key={slot.value}
+                              type="button"
+                              onClick={() => selectTimeSlot(slot.value)}
+                              disabled={!available}
+                              className={`time-slot-btn ${
+                                formData.appointmentTime === slot.value 
+                                  ? 'selected' 
+                                  : !available 
+                                  ? 'disabled' 
+                                  : ''
+                              }`}
+                            >
+                              {slot.label}
+                              {!available && <span className="slot-booked">✕</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="form-group">
@@ -348,7 +441,7 @@ export default function BookAppointment({ onClose, onSuccess, patientInfo = null
           {step === 2 && (
             <div>
               <div className="info-box">
-                <p> Chọn các dịch vụ bạn muốn thực hiện cùng với khám bệnh (có thể bỏ qua)</p>
+                <p>💡 Chọn các dịch vụ bạn muốn thực hiện cùng với khám bệnh (có thể bỏ qua)</p>
               </div>
 
               <div className="form-grid">
@@ -400,7 +493,7 @@ export default function BookAppointment({ onClose, onSuccess, patientInfo = null
               </div>
 
               <div className="summary-section">
-                <h3 className="summary-title"> Bác sĩ khám</h3>
+                <h3 className="summary-title">🩺 Bác sĩ khám</h3>
                 <div className="summary-doctor">
                   <div>
                     <p className="doctor-name">{selectedDoctor?.fullname}</p>
@@ -412,7 +505,7 @@ export default function BookAppointment({ onClose, onSuccess, patientInfo = null
 
               {selectedServices.length > 0 && (
                 <div className="summary-section">
-                  <h3 className="summary-title"> Dịch vụ ({selectedServices.length})</h3>
+                  <h3 className="summary-title">💉 Dịch vụ ({selectedServices.length})</h3>
                   {selectedServices.map(sId => {
                     const service = services.find(s => s.serviceId === sId);
                     return (
@@ -427,7 +520,7 @@ export default function BookAppointment({ onClose, onSuccess, patientInfo = null
 
               <div className="total-section">
                 <div className="total-row">
-                  <span> Tổng cộng</span>
+                  <span>💰 Tổng cộng</span>
                   <span>{totalAmount.toLocaleString('vi-VN')}đ</span>
                 </div>
                 <p className="total-breakdown">
@@ -464,7 +557,7 @@ export default function BookAppointment({ onClose, onSuccess, patientInfo = null
             disabled={loading}
             className="modal-btn modal-btn-primary"
           >
-            {loading ? 'Đang xử lý...' : step === 3 ? 'Xác nhận đặt lịch' : 'Tiếp tục'}
+            {loading ? '⏳ Đang xử lý...' : step === 3 ? '✅ Xác nhận đặt lịch' : 'Tiếp tục →'}
           </button>
         </div>
       </div>

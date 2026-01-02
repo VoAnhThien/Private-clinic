@@ -22,8 +22,8 @@ export const appointmentApi = {
 
   // Lấy lịch hẹn của patient
   getByPatient: async (patientId) => {
-  const response = await api.get(`/appointments/patient/${patientId}`);
-  return response.data;
+    const response = await api.get(`/appointments/patient/${patientId}`);
+    return response.data;
   },
 
   // Tạo lịch hẹn mới
@@ -32,11 +32,20 @@ export const appointmentApi = {
     return response.data;
   },
 
-  // Cập nhật trạng thái appointment (ĐÚNG VỊ TRÍ)
+  // Cập nhật trạng thái appointment
   updateStatus: async (appointmentId, status) => {
     const response = await api.put(`/appointments/${appointmentId}/status`, { 
       status: status 
     });
+    return response.data;
+  },
+
+  // ===== THÊM MỚI: Lấy lịch tuần =====
+  getWeeklySchedule: async (doctorId, startDate) => {
+    const response = await api.get(
+      `/appointments/doctor/${doctorId}/weekly-schedule`,
+      { params: { startDate } }
+    );
     return response.data;
   }
 };
@@ -63,7 +72,7 @@ export const doctorApi = {
   },
 };
 
-// THÊM API MỚI - Medical Records
+// Medical Records API
 export const medicalRecordApi = {
   create: async (recordData) => {
     const response = await api.post('/medical-records', recordData);

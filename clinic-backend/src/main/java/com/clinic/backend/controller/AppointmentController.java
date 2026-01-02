@@ -14,11 +14,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.clinic.backend.dto.AppointmentRequest;
 import com.clinic.backend.dto.AppointmentResponse;
+import com.clinic.backend.dto.WeeklyScheduleResponse;
 import com.clinic.backend.service.AppointmentService;
 
 import jakarta.validation.Valid;
@@ -69,8 +71,32 @@ public class AppointmentController {
         return ResponseEntity.ok(updatedAppointment);
     }
     
+    @GetMapping("/doctor/{doctorId}/weekly-schedule")
+    public ResponseEntity<WeeklyScheduleResponse> getWeeklySchedule(
+            @PathVariable Integer doctorId,
+            @RequestParam(required = false) String startDate) {
+        
+        LocalDate start = startDate != null 
+            ? LocalDate.parse(startDate) 
+            : LocalDate.now().with(java.time.DayOfWeek.MONDAY); // Bắt đầu từ thứ 2
+        
+        WeeklyScheduleResponse schedule = service.getWeeklySchedule(doctorId, start);
+        return ResponseEntity.ok(schedule);
+    }
+    
     @Data
     public static class UpdateStatusRequest {
         private String status;
     }
+
+    @GetMapping("/available-slots")
+    public ResponseEntity<List<String>> getAvailableTimeSlots(
+            @RequestParam Integer doctorId,
+            @RequestParam String date) {
+        
+        LocalDate appointmentDate = LocalDate.parse(date);
+        List<String> availableSlots = service.getAvailableTimeSlots(doctorId, appointmentDate);
+        return ResponseEntity.ok(availableSlots);
+    }
+    
 }

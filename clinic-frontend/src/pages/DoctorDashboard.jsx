@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { appointmentApi, doctorApi, medicalRecordApi } from '../services/appointmentApi';
 import ExaminationModal from '../components/ExaminationModal';
+import { Calendar, X, Clock, User, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 import './Css/DoctorDashboard.css';
 
 const DoctorDashboard = () => {
@@ -22,11 +23,19 @@ const DoctorDashboard = () => {
     weeklyAppointments: 0
   });
 
-  // State cho modal
+  // State cho Weekly Schedule
+  const [weeklySchedule, setWeeklySchedule] = useState(null);
+  const [currentWeekStart, setCurrentWeekStart] = useState(null);
+  const [selectedDayAppointments, setSelectedDayAppointments] = useState([]);
+  const [showDayModal, setShowDayModal] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [dayModalLoading, setDayModalLoading] = useState(false);
+
+  // State cho modal examination
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [showExaminationModal, setShowExaminationModal] = useState(false);
 
-  // Fetch data
+  // Fetch tất cả data
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -46,11 +55,77 @@ const DoctorDashboard = () => {
       setFilteredAppointments(todayAppointments);
       calculateStats(todayAppointments, appointmentsData);
 
+      // Khởi tạo tuần hiện tại
+      const todayDate = new Date();
+      const monday = new Date(todayDate);
+      const dayOfWeek = monday.getDay();
+      const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      monday.setDate(monday.getDate() + diff);
+      setCurrentWeekStart(monday);
+
+      // Fetch weekly schedule
+      await fetchWeeklySchedule(monday, doctorData.doctorId);
+
     } catch (err) {
       console.error('Error fetching data:', err);
       setError('Không thể tải dữ liệu. Vui lòng thử lại.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch weekly schedule
+  const fetchWeeklySchedule = async (startDate, doctorId) => {
+    try {
+      const dateStr = startDate.toISOString().split('T')[0];
+      const weeklyData = await appointmentApi.getWeeklySchedule(
+        doctorId || doctorInfo.doctorId, 
+        dateStr
+      );
+      setWeeklySchedule(weeklyData);
+    } catch (error) {
+      console.error('Error fetching weekly schedule:', error);
+    }
+  };
+
+  // Navigate weeks
+  const handlePreviousWeek = () => {
+    const newStart = new Date(currentWeekStart);
+    newStart.setDate(newStart.getDate() - 7);
+    setCurrentWeekStart(newStart);
+    fetchWeeklySchedule(newStart, doctorInfo.doctorId);
+  };
+
+  const handleNextWeek = () => {
+    const newStart = new Date(currentWeekStart);
+    newStart.setDate(newStart.getDate() + 7);
+    setCurrentWeekStart(newStart);
+    fetchWeeklySchedule(newStart, doctorInfo.doctorId);
+  };
+
+  // Handle day click - Fetch appointments thật
+  const handleDayClick = async (day) => {
+    if (day.appointmentCount === 0) return;
+
+    try {
+      setSelectedDate(day.date);
+      setShowDayModal(true);
+      setDayModalLoading(true);
+
+      // Gọi API lấy appointments của ngày đó
+      const dayAppointments = await appointmentApi.getByDate(day.date);
+      
+      // Lọc chỉ lấy appointments của bác sĩ hiện tại
+      const filteredAppointments = dayAppointments.filter(
+        apt => apt.doctorId === doctorInfo.doctorId && apt.status !== 'canceled'
+      );
+      
+      setSelectedDayAppointments(filteredAppointments);
+    } catch (error) {
+      console.error('Error fetching day appointments:', error);
+      alert('Không thể tải lịch khám. Vui lòng thử lại.');
+    } finally {
+      setDayModalLoading(false);
     }
   };
 
@@ -73,8 +148,6 @@ const DoctorDashboard = () => {
   // Handler "Bắt đầu khám"
   const handleStartExamination = async (appointment) => {
     try {
-      console.log('🩺 Bắt đầu khám:', appointment);
-      
       await appointmentApi.updateStatus(appointment.appointmentId, 'in-progress');
       await fetchData();
       
@@ -90,7 +163,6 @@ const DoctorDashboard = () => {
 
   // Handler "Chi tiết"
   const handleViewDetails = (appointment) => {
-    console.log('📋 Xem chi tiết:', appointment);
     setSelectedAppointment(appointment);
     setShowExaminationModal(true);
   };
@@ -98,8 +170,6 @@ const DoctorDashboard = () => {
   // Handler "Lưu kết quả"
   const handleSaveExamination = async (data) => {
     try {
-      console.log('💾 Lưu kết quả:', data);
-      
       await medicalRecordApi.create({
         patientId: selectedAppointment.patientId,
         appointmentId: data.appointmentId,
@@ -144,14 +214,14 @@ const DoctorDashboard = () => {
   };
 
   const getStatusBadge = (status) => {
-    const statusConfig = {
+    const configs = {
       pending: { class: 'status-waiting', text: 'Chờ khám', icon: '⏳' },
       confirmed: { class: 'status-confirmed', text: 'Đã xác nhận', icon: '✅' },
       'in-progress': { class: 'status-progress', text: 'Đang khám', icon: '🩺' },
       completed: { class: 'status-completed', text: 'Hoàn thành', icon: '🎯' },
       canceled: { class: 'status-canceled', text: 'Đã hủy', icon: '❌' }
     };
-    const config = statusConfig[status] || statusConfig.pending;
+    const config = configs[status] || configs.pending;
     return (
       <span className={`status-badge ${config.class}`}>
         <span className="status-icon">{config.icon}</span>
@@ -173,6 +243,11 @@ const DoctorDashboard = () => {
     return `${days[date.getDay()]}, ${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
   };
 
+  const formatDateShort = (dateString) => {
+    const date = new Date(dateString);
+    return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+  };
+
   const getCurrentDate = () => {
     const now = new Date();
     return formatDate(now.toISOString().split('T')[0]);
@@ -181,6 +256,11 @@ const DoctorDashboard = () => {
   const getCurrentTime = () => {
     const now = new Date();
     return now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const isToday = (dateString) => {
+    const today = new Date().toISOString().split('T')[0];
+    return dateString === today;
   };
 
   if (loading) {
@@ -286,11 +366,62 @@ const DoctorDashboard = () => {
             </div>
           </div>
           <div className="stat-card">
-            <div className="stat-icon bg-purple-100"></div>
+            <div className="stat-icon bg-purple-100">📅</div>
             <div className="stat-content">
               <h3>{stats.weeklyAppointments}</h3>
               <p>Lịch tuần</p>
             </div>
+          </div>
+        </div>
+
+        {/* Weekly Schedule Section */}
+        <div className="weekly-schedule-section">
+          <div className="section-header">
+            <h2>📅 Lịch khám trong tuần</h2>
+            <div className="week-navigation">
+              <button onClick={handlePreviousWeek} className="week-nav-btn">
+                <ChevronLeft size={20} />
+              </button>
+              <span className="week-range">
+                {currentWeekStart && `${formatDateShort(currentWeekStart.toISOString())} - ${formatDateShort(new Date(currentWeekStart.getTime() + 6 * 24 * 60 * 60 * 1000).toISOString())}`}
+              </span>
+              <button onClick={handleNextWeek} className="week-nav-btn">
+                <ChevronRight size={20} />
+              </button>
+            </div>
+          </div>
+
+          <div className="week-grid">
+            {weeklySchedule?.days.map((day, idx) => {
+              const isTodayDate = isToday(day.date);
+              const hasAppointments = day.appointmentCount > 0;
+              
+              return (
+                <div
+                  key={idx}
+                  onClick={() => hasAppointments && handleDayClick(day)}
+                  className={`day-card ${isTodayDate ? 'today' : ''} ${hasAppointments ? 'has-appointments' : 'empty'}`}
+                >
+                  <div className="day-header">
+                    <div className="day-name">{day.dayOfWeek}</div>
+                    <div className="day-date">{formatDateShort(day.date)}</div>
+                  </div>
+                  
+                  <div className="day-content">
+                    {hasAppointments ? (
+                      <div className="appointment-count">
+                        <span className="count-badge">{day.appointmentCount}</span>
+                        <span className="count-label">lịch hẹn</span>
+                      </div>
+                    ) : (
+                      <div className="empty-day">Trống</div>
+                    )}
+                  </div>
+
+                  {isTodayDate && <div className="today-indicator"></div>}
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -309,10 +440,6 @@ const DoctorDashboard = () => {
                 <option value="in-progress">Đang khám</option>
                 <option value="completed">Hoàn thành</option>
               </select>
-              {/* <button className="btn-primary">
-                <span>+</span>
-                Thêm lịch khám
-              </button> */}
             </div>
           </div>
 
@@ -447,6 +574,92 @@ const DoctorDashboard = () => {
           }}
           onSave={handleSaveExamination}
         />
+      )}
+
+      {/* Day Appointments Modal */}
+      {showDayModal && (
+        <div className="modal-overlay" onClick={() => setShowDayModal(false)}>
+          <div className="day-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="day-modal-header">
+              <div>
+                <h3>Lịch khám ngày {selectedDate && formatDateShort(selectedDate)}</h3>
+                <p>{selectedDayAppointments.length} lịch hẹn</p>
+              </div>
+              <button onClick={() => setShowDayModal(false)} className="close-btn">
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="day-modal-content">
+              {dayModalLoading ? (
+                <div className="loading-container">
+                  <div className="loading-spinner">⌛</div>
+                  <p>Đang tải...</p>
+                </div>
+              ) : selectedDayAppointments.length === 0 ? (
+                <div className="no-appointments">
+                  <p>Không có lịch hẹn nào</p>
+                </div>
+              ) : (
+                <div className="day-appointments-list">
+                  {selectedDayAppointments.map((apt) => (
+                    <div key={apt.appointmentId} className="day-appointment-card">
+                      <div className="appointment-header">
+                        <div className="patient-info">
+                          <div className="patient-avatar">👤</div>
+                          <div>
+                            <strong>{apt.patientName}</strong>
+                            <span>{apt.patientPhone}</span>
+                          </div>
+                        </div>
+                        {getStatusBadge(apt.status)}
+                      </div>
+
+                      <div className="appointment-details">
+                        <div className="detail-item">
+                          <Clock size={16} />
+                          <span>Giờ khám:</span>
+                          <strong>{formatTime(apt.appointmentTime)}</strong>
+                        </div>
+                        <div className="detail-item">
+                          <FileText size={16} />
+                          <span>Phòng:</span>
+                          <strong>{apt.roomName || 'Chưa xác định'}</strong>
+                        </div>
+                      </div>
+
+                      <div className="appointment-reason">
+                        <span>Lý do khám:</span>
+                        <p>{apt.reason || 'Khám tổng quát'}</p>
+                      </div>
+
+                      <div className="appointment-actions">
+                        <button 
+                          className="btn-start"
+                          onClick={() => {
+                            setShowDayModal(false);
+                            handleStartExamination(apt);
+                          }}
+                        >
+                          Bắt đầu khám
+                        </button>
+                        <button 
+                          className="btn-details"
+                          onClick={() => {
+                            setShowDayModal(false);
+                            handleViewDetails(apt);
+                          }}
+                        >
+                          Chi tiết
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

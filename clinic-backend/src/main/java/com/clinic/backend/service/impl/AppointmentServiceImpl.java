@@ -4,9 +4,11 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -15,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.clinic.backend.dto.AppointmentRequest;
 import com.clinic.backend.dto.AppointmentResponse;
+import com.clinic.backend.dto.WeeklyScheduleResponse;
 import com.clinic.backend.entity.Appointment;
 import com.clinic.backend.entity.Doctor;
 import com.clinic.backend.entity.Patient;
@@ -41,7 +44,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final AdminRepository adminRepo;
     private final ServiceRepository serviceRepo;
 
-    private static final int MAX_APPOINTMENTS_PER_DOCTOR_PER_DAY = 100;
+    private static final int MAX_APPOINTMENTS_PER_DOCTOR_PER_DAY = 20;
 
     @Override
     public List<AppointmentResponse> getAllAppointments() {
@@ -73,7 +76,6 @@ public class AppointmentServiceImpl implements AppointmentService {
         Doctor doctor = doctorRepo.findById(request.getDoctorId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy bác sĩ ID: " + request.getDoctorId()));
 
-        // ===== CHECK 100 APPOINTMENTS =====
         long appointmentCount = appointmentRepo.countByDoctorAndAppointmentDateAndStatusNot(
             doctor, 
             request.getAppointmentDate(),
@@ -121,6 +123,8 @@ public class AppointmentServiceImpl implements AppointmentService {
             }
         }
 
+        String appointmentStatus = determineAppointmentStatus(request.getAppointmentDate(), patient);
+
         Appointment appointment = Appointment.builder()
                 .patient(patient)
                 .doctor(doctor)
@@ -128,7 +132,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .appointmentDate(request.getAppointmentDate())
                 .appointmentTime(request.getAppointmentTime())
                 .reason(request.getReason())
-                .status("pending")
+                .status(appointmentStatus)
                 .contactFullname(request.getFullname())
                 .contactEmail(request.getEmail())
                 .contactPhone(request.getPhone())
@@ -164,6 +168,29 @@ public class AppointmentServiceImpl implements AppointmentService {
     private boolean isRoomBooked(Integer roomId, LocalDate date, LocalTime time) {
         return appointmentRepo.findByRoom_RoomIdAndAppointmentDateAndAppointmentTime(roomId, date, time)
                 .stream().anyMatch(a -> !"canceled".equals(a.getStatus()));
+    }
+
+    private String determineAppointmentStatus(LocalDate appointmentDate, Patient patient) {
+        LocalDate today = LocalDate.now();
+        
+        if (appointmentDate.isAfter(today)) {
+            return "confirmed";
+        }
+        
+        if (appointmentDate.equals(today)) {
+            long previousAppointments = appointmentRepo.findByPatient_PatientId(patient.getPatientId())
+                    .stream()
+                    .filter(a -> !"canceled".equals(a.getStatus()))
+                    .count();
+            
+            if (previousAppointments > 0) {
+                return "confirmed";
+            }
+            
+            return "pending";
+        }
+        
+        return "pending";
     }
 
     @Override
@@ -209,7 +236,6 @@ public class AppointmentServiceImpl implements AppointmentService {
         return (int) Math.max(0, MAX_APPOINTMENTS_PER_DOCTOR_PER_DAY - count);
     }
 
-    // ===== MAIN MAPPING METHOD 
     private AppointmentResponse toResponse(Appointment a) {
         BigDecimal doctorFee = a.getDoctor().getConsultationFee() != null 
             ? a.getDoctor().getConsultationFee() 
@@ -253,5 +279,96 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .totalServiceFee(serviceFee)
                 .totalAmount(doctorFee.add(serviceFee))
                 .build();
+    }
+    
+    @Override
+    public WeeklyScheduleResponse getWeeklySchedule(Integer doctorId, LocalDate startDate) {
+        // Validate doctor
+        doctorRepo.findById(doctorId)
+            .orElseThrow(() -> new RuntimeException("Không tìm thấy bác sĩ ID: " + doctorId));
+        
+        LocalDate endDate = startDate.plusDays(6); // 7 ngày
+        
+        // Lấy tất cả lịch trong tuần
+        List<Appointment> appointments = appointmentRepo
+            .findByDoctor_DoctorIdAndAppointmentDateBetween(doctorId, startDate, endDate)
+            .stream()
+            .filter(a -> !"canceled".equals(a.getStatus())) // Loại bỏ lịch đã hủy
+            .collect(Collectors.toList());
+        
+        // Nhóm theo ngày
+        Map<LocalDate, List<Appointment>> groupedByDate = appointments.stream()
+            .collect(Collectors.groupingBy(Appointment::getAppointmentDate));
+        
+        // Tạo danh sách 7 ngày
+        List<WeeklyScheduleResponse.DaySchedule> days = new ArrayList<>();
+        String[] dayNames = {"Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"};
+        
+        for (int i = 0; i < 7; i++) {
+            LocalDate currentDate = startDate.plusDays(i);
+            List<Appointment> dayAppointments = groupedByDate.getOrDefault(currentDate, List.of());
+            
+            String dayName = dayNames[currentDate.getDayOfWeek().getValue() % 7];
+            
+            days.add(new WeeklyScheduleResponse.DaySchedule(
+                currentDate,
+                dayName,
+                dayAppointments.size(),
+                dayAppointments.stream()
+                    .map(Appointment::getAppointmentId)
+                    .collect(Collectors.toList())
+            ));
+        }
+        
+        return new WeeklyScheduleResponse(
+            startDate,
+            endDate,
+            days,
+            appointments.size()
+        );
+    }
+
+    // Thêm method này vào cuối class AppointmentServiceImpl.java
+
+    @Override
+    public List<String> getAvailableTimeSlots(Integer doctorId, LocalDate date) {
+        // Validate doctor
+        doctorRepo.findById(doctorId)
+            .orElseThrow(() -> new RuntimeException("Không tìm thấy bác sĩ ID: " + doctorId));
+        
+        // Lấy tất cả appointments đã đặt trong ngày (loại bỏ canceled)
+        List<Appointment> bookedAppointments = appointmentRepo
+            .findActiveAppointmentsByDoctorAndDate(doctorId, date);
+        
+        // Lấy danh sách giờ đã đặt
+        Set<String> bookedTimes = bookedAppointments.stream()
+            .map(a -> a.getAppointmentTime().toString().substring(0, 5)) // "HH:mm"
+            .collect(Collectors.toSet());
+        
+        // Tất cả khung giờ làm việc
+        List<String> allTimeSlots = Arrays.asList(
+            "08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00",
+            "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30"
+        );
+        
+        // Lọc ra các giờ còn trống
+        List<String> availableSlots = allTimeSlots.stream()
+            .filter(time -> !bookedTimes.contains(time))
+            .collect(Collectors.toList());
+        
+        // Nếu là ngày hôm nay, loại bỏ các giờ đã qua
+        LocalDate today = LocalDate.now();
+        if (date.equals(today)) {
+            LocalTime currentTime = LocalTime.now();
+            availableSlots = availableSlots.stream()
+                .filter(time -> {
+                    LocalTime slotTime = LocalTime.parse(time);
+                    // Chỉ giữ các slot sau thời điểm hiện tại ít nhất 30 phút
+                    return slotTime.isAfter(currentTime.plusMinutes(30));
+                })
+                .collect(Collectors.toList());
+        }
+        
+        return availableSlots;
     }
 }

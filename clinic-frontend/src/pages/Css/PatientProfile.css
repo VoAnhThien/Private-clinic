@@ -51,8 +51,8 @@
 /* ========== PROFILE CONTAINER ========== */
 .profile-container {
   display: grid;
-  gap: 2rem;
-  max-width: 1200px;
+  gap: 0.5rem;
+  max-width: 1250px;
 }
 
 .profile-card {
